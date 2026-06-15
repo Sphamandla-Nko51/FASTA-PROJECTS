@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pip install *)",
+      "Bash(python tools/process_csv.py --file .tmp/sample.csv)",
+      "Bash(python tools/generate_dashboard.py)",
+      "Bash(echo \"EXIT $?\")"
+    ]
+  }
+}

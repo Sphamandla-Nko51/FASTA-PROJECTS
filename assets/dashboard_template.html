@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ brand.company }} — Internal Collections Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family={{ brand.font }}:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --primary:   {{ brand.primary }};
+      --secondary: {{ brand.secondary }};
+      --accent:    {{ brand.accent }};
+      --bg:        #f4fbff;
+      --surface:   #ffffff;
+      --text:      #1a1a2e;
+      --muted:     #6b7a99;
+      --border:    #d4eef9;
+      --radius:    12px;
+      --shadow:    0 1px 4px rgba(0,0,0,.08), 0 4px 16px rgba(0,0,0,.06);
+      --pos-bg:    #d1fae5; --pos-fg: #047857;
+      --neg-bg:    #fee2e2; --neg-fg: #b91c1c;
+    }
+
+    body {
+      font-family: '{{ brand.font }}', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--primary);
+      color: #fff;
+      padding: 20px 40px;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 12px;
+    }
+    .header-left { display: flex; align-items: center; gap: 16px; }
+    .header-logo { height: 48px; width: auto; object-fit: contain; filter: brightness(0) invert(1); }
+    .header-title h1 { font-size: 1.4rem; font-weight: 700; letter-spacing: -0.02em; }
+    .header-title p { font-size: 0.82rem; opacity: 0.7; margin-top: 2px; }
+    .header-meta { text-align: right; font-size: 0.8rem; opacity: 0.65; line-height: 1.6; }
+
+    /* ── Layout ── */
+    main { max-width: 1400px; margin: 0 auto; padding: 32px 24px; display: flex; flex-direction: column; gap: 28px; }
+    .section-title {
+      font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.08em; color: var(--accent); margin-bottom: -12px;
+    }
+
+    /* ── Summary cards ── */
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+    .kpi-card {
+      background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow);
+      padding: 18px 22px; border-left: 4px solid var(--secondary);
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .kpi-label { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+    .kpi-value { font-size: 2rem; font-weight: 700; color: var(--text); line-height: 1.05; }
+    .kpi-foot { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .kpi-sub { font-size: 0.74rem; color: var(--muted); }
+    .chip {
+      display: inline-block; padding: 2px 9px; border-radius: 12px; font-size: 0.72rem;
+      font-weight: 600; white-space: nowrap; background: #eef4f8; color: var(--muted);
+    }
+    .badge { display: inline-block; padding: 2px 9px; border-radius: 12px; font-size: 0.72rem; font-weight: 700; white-space: nowrap; }
+    .badge.pos { background: var(--pos-bg); color: var(--pos-fg); }
+    .badge.neg { background: var(--neg-bg); color: var(--neg-fg); }
+    .badge.neutral { background: #f1f5f9; color: #94a3b8; }
+
+    /* ── Chart cards ── */
+    .chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    @media (max-width: 900px) { .chart-grid { grid-template-columns: 1fr; } }
+    .chart-card { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); padding: 24px; }
+    .chart-card h2 {
+      font-size: 0.9rem; font-weight: 600; text-transform: none;
+      letter-spacing: 0; color: var(--text); margin-bottom: 18px;
+    }
+    .chart-wrap { position: relative; height: 300px; }
+
+    /* ── Segment table ── */
+    .table-card { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); padding: 24px; overflow-x: auto; }
+    .seg-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    .seg-table th {
+      text-align: right; font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.04em; color: var(--muted); padding: 8px 12px;
+      border-bottom: 2px solid var(--border); white-space: nowrap;
+    }
+    .seg-table th.lt { text-align: left; }
+    .seg-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); white-space: nowrap; text-align: right; }
+    .seg-table td.lt { text-align: left; }
+    .seg-table .group-row td {
+      text-align: center; font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.08em; color: var(--accent); background: var(--bg); padding: 7px 12px;
+    }
+    .seg-table .seg-name { font-weight: 700; color: var(--text); }
+    .seg-table .metric-name { color: var(--muted); }
+    .seg-table .latest { font-weight: 700; color: var(--primary); }
+    .seg-table .delta.pos { color: var(--pos-fg); font-weight: 600; }
+    .seg-table .delta.neg { color: var(--neg-fg); font-weight: 600; }
+    .seg-table .delta.neutral { color: var(--muted); }
+    .seg-table tbody tr:hover td { background: rgba(1,169,230,0.04); }
+    .seg-table .seg-first td { border-top: 2px solid var(--border); }
+
+    /* ── Book tabs ── */
+    .book-tabs { display: flex; gap: 4px; border-bottom: 2px solid var(--border); }
+    .book-tab {
+      padding: 10px 24px; border: none; border-bottom: 3px solid transparent;
+      background: none; font-family: inherit; font-size: 0.9rem; font-weight: 600;
+      color: var(--muted); cursor: pointer; transition: all 0.15s; margin-bottom: -2px;
+    }
+    .book-tab:hover { color: var(--primary); }
+    .book-tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+    .book-view { display: none; flex-direction: column; gap: 28px; }
+    .book-view.active { display: flex; }
+
+    /* ── Footer ── */
+    footer { text-align: center; font-size: 0.72rem; color: var(--muted); padding: 24px; border-top: 1px solid var(--border); line-height: 1.7; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    {% if logo_b64 %}
+    <img class="header-logo" src="data:image/png;base64,{{ logo_b64 }}" alt="{{ brand.company }} logo" />
+    {% endif %}
+    <div class="header-title">
+      <h1>{{ brand.company }}</h1>
+      <p>Internal Collections Performance Dashboard</p>
+    </div>
+  </div>
+  <div class="header-meta">
+    <div>{{ period_label }}</div>
+    <div>Generated: {{ generated_at }}</div>
+  </div>
+</header>
+
+<main>
+
+  <div class="book-tabs">
+    <button class="book-tab active" data-book="interm">In-Term Arrears</button>
+    <button class="book-tab" data-book="oot">Out-of-Term Recoveries</button>
+  </div>
+
+  <div id="view-interm" class="book-view active">
+
+  <!-- Summary cards -->
+  <p class="section-title">Summary &middot; latest full month</p>
+  <div class="kpi-grid">
+    {% for c in cards %}
+    <div class="kpi-card">
+      <span class="kpi-label">{{ c.label }}</span>
+      <span class="kpi-value">{{ c.value }}</span>
+      <div class="kpi-foot">
+        <span class="chip">tgt {{ c.target }}</span>
+        <span class="badge {{ 'pos' if c.meets_target else 'neg' }}">{{ c.delta }}</span>
+      </div>
+      <span class="kpi-sub">{{ c.sub }}</span>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Charts -->
+  <p class="section-title">Trends by opening segment</p>
+  <div class="chart-grid">
+    <div class="chart-card">
+      <h2>Effort yield % by opening segment</h2>
+      <div class="chart-wrap"><canvas id="chartEffortYield"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h2>Collection rate % by opening segment</h2>
+      <div class="chart-wrap"><canvas id="chartCollectionRate"></canvas></div>
+    </div>
+  </div>
+  <div class="chart-grid">
+    <div class="chart-card">
+      <h2>Auto vs effort composition — MP1 (% of collected)</h2>
+      <div class="chart-wrap"><canvas id="chartAutoEffort"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h2>Net arrears movement (Rm) — all segments</h2>
+      <div class="chart-wrap"><canvas id="chartArrearsMove"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Segment table -->
+  <p class="section-title">Segment detail</p>
+  <div class="table-card">
+    <table class="seg-table">
+      <thead>
+        <tr>
+          <th class="lt">Segment</th>
+          <th class="lt">Metric</th>
+          {% for m in table.month_headers %}<th>{{ m }}</th>{% endfor %}
+          <th>MoM Δ</th>
+          <th>3M Avg</th>
+          <th>YoY</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for group in table.groups %}
+        <tr class="group-row"><td colspan="{{ table.month_headers|length + 5 }}">{{ group.bucket }}</td></tr>
+        {% for seg in group.segments %}
+        {% for metric in seg.metrics %}
+        <tr class="{{ 'seg-first' if loop.first else '' }}">
+          {% if loop.first %}<td class="lt seg-name" rowspan="{{ seg.metrics|length }}">{{ seg.segment }}</td>{% endif %}
+          <td class="lt metric-name">{{ metric.label }}</td>
+          {% for i in range(metric.cells|length) %}
+          <td class="{{ 'latest' if loop.last else '' }}">{{ metric.cells[i] }}</td>
+          {% endfor %}
+          <td class="delta {{ metric.mom_cls }}">{{ metric.mom }}</td>
+          <td>{{ metric.avg3 }}</td>
+          <td class="delta {{ metric.yoy_cls }}">{{ metric.yoy }}</td>
+        </tr>
+        {% endfor %}
+        {% endfor %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  </div><!-- /view-interm -->
+
+  <div id="view-oot" class="book-view">
+
+  <!-- OOT summary cards -->
+  <p class="section-title">Out-of-term recoveries &middot; latest full month</p>
+  <div class="kpi-grid">
+    {% for c in oot_cards %}
+    <div class="kpi-card">
+      <span class="kpi-label">{{ c.label }}</span>
+      <span class="kpi-value">{{ c.value }}</span>
+      {% if c.avg3 or c.target or c.delta %}
+      <div class="kpi-foot">
+        {% if c.avg3 %}<span class="kpi-sub">{{ c.avg3 }}</span>{% endif %}
+        {% if c.target %}<span class="chip">tgt {{ c.target }}</span>{% endif %}
+        {% if c.delta %}<span class="badge {{ c.delta_cls }}">{{ c.delta }}</span>{% endif %}
+      </div>
+      {% endif %}
+      {% if c.sub %}<span class="kpi-sub">{{ c.sub }}</span>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- OOT charts -->
+  <p class="section-title">Recovery trends &middot; vs 3-month average</p>
+  <div class="chart-grid">
+    <div class="chart-card">
+      <h2>OOT collections (Rm, FTTC) — vs 3m avg</h2>
+      <div class="chart-wrap"><canvas id="chartOotCollections"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h2>OOT book yield % vs 3m avg</h2>
+      <div class="chart-wrap"><canvas id="chartOotYield"></canvas></div>
+    </div>
+  </div>
+  <div class="chart-grid">
+    <div class="chart-card">
+      <h2>OOT payer rate % vs 3m avg</h2>
+      <div class="chart-wrap"><canvas id="chartOotPayerRate"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h2>OOT auto vs effort split %</h2>
+      <div class="chart-wrap"><canvas id="chartOotAutoEffort"></canvas></div>
+    </div>
+  </div>
+
+  </div><!-- /view-oot -->
+
+</main>
+
+<footer>
+  Yield = net_receipts / (opening_arrears + instalment_due) &middot; Payer rate = payers / loan_count &middot;
+  Auto = DebiCheck (Instalment Receipt) &middot; Effort = agent (Other Receipt)<br>
+  Population: opening segments MP1 · MP2 · MP3+ (in-term arrears) &middot;
+  {{ brand.company }} Internal Collections &middot; {{ generated_at }} &middot; Source: redblade
+</footer>
+
+<script>
+const DATA = {{ chart_data_json }};
+
+const PRIMARY   = '{{ brand.primary }}';
+const SECONDARY = '{{ brand.secondary }}';
+const ACCENT    = '{{ brand.accent }}';
+
+// Per-segment colours (New Loan teal, MP0 purple, MP1 blue, MP2 gold, MP3+ red).
+const SEG_COLORS = { 'New Loan': '#14b8a6', 'MP0': '#8b5cf6', 'MP1': PRIMARY, 'MP2': '#b8860b', 'MP3+': '#e2483d' };
+const colorFor = (label, i) => SEG_COLORS[label] || ['#14b8a6', '#8b5cf6', PRIMARY, '#b8860b', '#e2483d'][i % 5];
+
+Chart.defaults.font.family = "'{{ brand.font }}', system-ui";
+Chart.defaults.color = '#6b7a99';
+
+const grid = { color: 'rgba(0,0,0,0.05)', drawBorder: false };
+const pctTick = v => v + '%';
+
+function lineChart(canvasId, datasets, yOpts) {
+  new Chart(document.getElementById(canvasId), {
+    type: 'line',
+    data: {
+      labels: DATA.months,
+      datasets: datasets.map((ds, i) => ({
+        ...ds,
+        borderColor: colorFor(ds.label, i),
+        backgroundColor: colorFor(ds.label, i) + '22',
+        borderWidth: 2, pointRadius: 2.5, tension: 0.35, fill: false, spanGaps: true,
+      })),
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'top', align: 'start', labels: { boxWidth: 12, padding: 12 } } },
+      scales: { x: { grid, ticks: { maxRotation: 45 } }, y: Object.assign({ grid }, yOpts) },
+    },
+  });
+}
+
+// 1 — Effort yield % by opening segment
+lineChart('chartEffortYield', DATA.effort_yield_datasets, { min: 0, ticks: { callback: pctTick } });
+
+// 2 — Collection rate % by opening segment
+lineChart('chartCollectionRate', DATA.collection_rate_datasets, { min: 0, ticks: { callback: pctTick } });
+
+// 3 — Auto vs effort composition for MP1 (stacked bar, % of collected)
+new Chart(document.getElementById('chartAutoEffort'), {
+  type: 'bar',
+  data: {
+    labels: DATA.months,
+    datasets: [
+      { label: 'Auto (DebiCheck)', data: DATA.mp1_auto, backgroundColor: ACCENT + 'dd', borderColor: ACCENT, borderWidth: 1, borderRadius: 2 },
+      { label: 'Effort (agent)',   data: DATA.mp1_effort, backgroundColor: PRIMARY + 'dd', borderColor: PRIMARY, borderWidth: 1, borderRadius: 2 },
+    ],
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'top', align: 'start', labels: { boxWidth: 12, padding: 12 } } },
+    scales: { x: { stacked: true, grid, ticks: { maxRotation: 45 } }, y: { stacked: true, grid, ticks: { callback: pctTick } } },
+  },
+});
+
+// 4 — Net arrears movement (Rm) by segment
+new Chart(document.getElementById('chartArrearsMove'), {
+  type: 'line',
+  data: {
+    labels: DATA.months,
+    datasets: DATA.arrears_move_datasets.map((ds, i) => ({
+      ...ds,
+      borderColor: colorFor(ds.label, i),
+      backgroundColor: colorFor(ds.label, i) + '22',
+      borderWidth: 2, pointRadius: 2.5, tension: 0.35, fill: false, spanGaps: true,
+    })),
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'top', align: 'start', labels: { boxWidth: 12, padding: 12 } } },
+    scales: { x: { grid, ticks: { maxRotation: 45 } }, y: { grid, ticks: { callback: v => 'R' + v.toFixed(1) + 'm' } } },
+  },
+});
+
+// ════════════════════════════════════════════════════════════════
+// Out-of-Term Recoveries
+// ════════════════════════════════════════════════════════════════
+const OOT  = {{ oot_chart_data_json }};
+const GOLD = '#c9a24b';
+const AVG3 = '#9aa7bd';
+
+const avgLineDataset = (data, label) => ({
+  label, data, type: 'line',
+  borderColor: AVG3, backgroundColor: 'transparent',
+  borderWidth: 2, borderDash: [6, 4], pointRadius: 0, tension: 0.35, spanGaps: true, order: 0,
+});
+
+const goldLine = (canvasId, data, label, yOpts) =>
+  new Chart(document.getElementById(canvasId), {
+    type: 'line',
+    data: { labels: OOT.months, datasets: [
+      { label, data, borderColor: GOLD, backgroundColor: GOLD + '22',
+        borderWidth: 2.5, pointRadius: 3, tension: 0.35, fill: false, spanGaps: true, order: 1 },
+    ] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'top', align: 'start', labels: { boxWidth: 12, padding: 12 } } },
+      scales: { x: { grid, ticks: { maxRotation: 45 } }, y: Object.assign({ grid }, yOpts) },
+    },
+  });
+
+// 1 — OOT collections (Rm) bars + 3m avg dashed line
+new Chart(document.getElementById('chartOotCollections'), {
+  type: 'bar',
+  data: {
+    labels: OOT.months,
+    datasets: [
+      { type: 'bar', label: 'Collections', data: OOT.collections,
+        backgroundColor: GOLD + 'cc', borderColor: GOLD, borderWidth: 1, borderRadius: 2, order: 1 },
+      avgLineDataset(OOT.collections_3m, '3m avg'),
+    ],
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'top', align: 'start', labels: { boxWidth: 12, padding: 12 } } },
+    scales: { x: { grid, ticks: { maxRotation: 45 } }, y: { grid, min: 0, ticks: { callback: v => 'R' + v.toFixed(1) + 'm' } } },
+  },
+});
+
+// 2 — OOT book yield % + 3m avg
+const cYield = goldLine('chartOotYield', OOT.yield, 'Yield', { ticks: { callback: pctTick } });
+cYield.data.datasets.push(avgLineDataset(OOT.yield_3m, '3m avg'));
+cYield.update();
+
+// 3 — OOT payer rate % + 3m avg
+const cPayer = goldLine('chartOotPayerRate', OOT.payer_rate, 'Payer rate', { min: 0, ticks: { callback: pctTick } });
+cPayer.data.datasets.push(avgLineDataset(OOT.payer_rate_3m, '3m avg'));
+cPayer.update();
+
+// 4 — OOT auto vs effort split (stacked bar)
+new Chart(document.getElementById('chartOotAutoEffort'), {
+  type: 'bar',
+  data: {
+    labels: OOT.months,
+    datasets: [
+      { label: 'Auto',   data: OOT.auto,   backgroundColor: ACCENT + 'dd', borderColor: ACCENT, borderWidth: 1, borderRadius: 2 },
+      { label: 'Effort', data: OOT.effort, backgroundColor: PRIMARY + 'dd', borderColor: PRIMARY, borderWidth: 1, borderRadius: 2 },
+    ],
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'top', align: 'start', labels: { boxWidth: 12, padding: 12 } } },
+    scales: { x: { stacked: true, grid, ticks: { maxRotation: 45 } }, y: { stacked: true, grid, ticks: { callback: pctTick } } },
+  },
+});
+
+// ── Tab switching ──
+document.querySelectorAll('.book-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.book-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.book-view').forEach(v => v.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('view-' + tab.dataset.book).classList.add('active');
+  });
+});
+</script>
+</body>
+</html>

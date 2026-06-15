@@ -1,0 +1,8 @@
+{
+  "company": "Fasta",
+  "primary": "#01a9e6",
+  "secondary": "rgb(105, 190, 33)",
+  "accent": "#6abd45",
+  "font": "Inter",
+  "logo": "./assets/logo.png"
+}
