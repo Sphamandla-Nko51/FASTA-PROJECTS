@@ -182,7 +182,11 @@ def build_chart_data(frame: pd.DataFrame) -> dict:
 def _fmt_val(v, unit):
     if v is None:
         return "—"
-    return f"R{v:.2f}m" if unit == "rm" else f"{v:.1f}%"
+    if unit == "rm":
+        return f"R{v:.2f}m"
+    if unit == "count":
+        return f"{v:,.0f}"
+    return f"{v:.1f}%"
 
 
 def _fmt_delta(d, unit):
@@ -190,6 +194,8 @@ def _fmt_delta(d, unit):
         return "—"
     if unit == "rm":
         return f"{'+' if d >= 0 else '-'}R{abs(d):.2f}m"
+    if unit == "count":
+        return f"{'+' if d >= 0 else '-'}{abs(d):,.0f}"
     return f"{'+' if d >= 0 else ''}{d:.1f}pp"
 
 
@@ -231,9 +237,10 @@ def _metric_row(frame, seg, label, col, unit, months, scale=1.0):
 def build_segment_table(frame: pd.DataFrame) -> dict:
     months = _months(frame)
     metric_specs = [
-        ("Collections (Rm)", "net_receipts",         "rm",  1e-6),
-        ("Yield %",          "collection_yield_pct", "pct", 1.0),
-        ("Payer rate %",     "payer_rate_pct",       "pct", 1.0),
+        ("Count of loans",   "loan_count",           "count", 1.0),
+        ("Collections (Rm)", "net_receipts",         "rm",    1e-6),
+        ("Yield %",          "collection_yield_pct", "pct",   1.0),
+        ("Payer rate %",     "payer_rate_pct",       "pct",   1.0),
     ]
 
     def seg_block(seg):

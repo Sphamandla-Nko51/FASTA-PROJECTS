@@ -1,6 +1,6 @@
 {
   "period": "Latest reporting month: May 2026",
-  "generated_at": "2026-06-15 10:59",
+  "generated_at": "2026-06-17 14:13",
   "in_term_cards": {
     "Collection Rate": "33.5%",
     "Effort Yield": "8.1%",
@@ -10,7 +10,7 @@
   "oot_cards": {
     "OOT Collected (FTTC)": "R4.38m",
     "OOT Book Yield": "1.42%",
-    "OOT Payers": "7,220",
+    "OOT Payers": "7,221",
     "OOT Accounts": "94,714"
   }
 }
