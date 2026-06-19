@@ -4,3 +4,4 @@ requests
 sqlalchemy
 psycopg2-binary
 Jinja2
+anthropic

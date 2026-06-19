@@ -1,6 +1,6 @@
 {
   "period": "Latest reporting month: May 2026",
-  "generated_at": "2026-06-17 14:13",
+  "generated_at": "2026-06-19 12:01",
   "in_term_cards": {
     "Collection Rate": "33.5%",
     "Effort Yield": "8.1%",
@@ -12,5 +12,11 @@
     "OOT Book Yield": "1.42%",
     "OOT Payers": "7,221",
     "OOT Accounts": "94,714"
+  },
+  "roll_cards": {
+    "Cure rate": "1.7%",
+    "Forward-roll rate": "65.8%",
+    "Default rate": "57.5%",
+    "Stable/Current": "17.7%"
   }
 }

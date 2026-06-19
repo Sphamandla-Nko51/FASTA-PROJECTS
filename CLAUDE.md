@@ -65,11 +65,16 @@ Every failure is a chance to make the system stronger:
 assets/         # Brand config, HTML template, and logo
   brand.json    # Company name, hex colors, font, logo path
   targets.json  # Per-metric targets for the summary cards (percentages)
+  recipients.json          # Optional newsletter recipients/subject (pre-fill only)
   logo.png      # Company logo (user-supplied; PNG recommended)
-  dashboard_template.html  # Jinja2 template rendered by generate_dashboard.py
+  dashboard_template.html  # Jinja2 dashboard template rendered by generate_dashboard.py
+  newsletter_template.html # Email-safe Jinja2 newsletter template
 output/         # Generated deliverables (gitignored)
   dashboard.html  # Self-contained branded HTML dashboard
-  report.json     # Raw KPI data for downstream use
+  report.json     # Headline KPI values
+  metrics.json    # Numeric metrics bundle consumed by the newsletter
+  newsletter.html # Branded email-ready newsletter (highlights/lowlights)
+  newsletter.eml  # MIME newsletter (HTML body + dashboard.html attached)
 sql/            # Raw SQL query files — edit here to change what data is pulled
   internal_collections.sql  # 12-month Internal Collections data with delinquency segmentation
 .tmp/           # Temporary files (scraped data, intermediate exports) — disposable
@@ -107,6 +112,15 @@ Importable module:
 python tools/out_of_term_by_segment.py --output .tmp/oot.csv
 ```
 
+### `tools/roll_rates_by_dpd.py`
+Importable module:
+- `get_roll_rates_data(engine)` — raw result of `sql/roll_rates_by_days_past_due.sql` (whole-book DPD migration; one row per month × start-DPD × end-DPD × movement_type).
+- `get_roll_rates_frame(engine)` — tidy frame: derives the month from `reporting_month_end` (the raw `snap_date` is a prefixed string), drops join-miss nulls, and adds a recomputed `movement` class via `classify_movement()` (the query's own `movement_type` is unreliable — see workflow doc).
+
+```bash
+python tools/roll_rates_by_dpd.py --output .tmp/roll_rates.csv
+```
+
 ### `tools/generate_dashboard.py`
 Main entry point for the collections dashboard. Orchestrates: query → cards → chart data → (in-term) segment table → Jinja2 render → file output, for **two tabs**. **No CLI arguments** — the SQL self-manages the reporting window.
 
@@ -114,13 +128,23 @@ Main entry point for the collections dashboard. Orchestrates: query → cards �
 python tools/generate_dashboard.py
 ```
 
-Outputs `output/dashboard.html` (open in any browser) and `output/report.json`. The dashboard has two tabs:
+Outputs `output/dashboard.html` (open in any browser), `output/report.json`, and `output/metrics.json` (numeric metrics bundle for the newsletter, via `build_metrics_bundle`). The dashboard has three tabs:
 - **In-Term Arrears** — 4 cards (Collection Rate, Effort Yield, Auto Collect %, Payer Rate, each with target chip + delta badge) and 4 charts scoped to the arrears population (MP1/MP2/MP3+), plus a segment-detail table covering **all** buckets/segments in the data (Current/MP0, Early Arrears, Deep Arrears, New Loan, Out of Term/MPM2 — built dynamically) with 7 months + MoM Δ + 3M Avg + YoY.
 - **Out-of-Term Recoveries** (whole OOT book) — 4 cards (Collected, Book Yield, Payers, Accounts) and 4 charts (collections vs 3m avg, book yield vs 3m avg, payer rate vs 3m avg, auto-vs-effort split).
+- **Roll Rates** (whole book, DPD migration) — 4 cards (Cure, Forward-roll, Default, Stable/Current), a 13-month pooled DPD transition matrix (row % + counts, heatmap), and 2 charts (movement composition, roll-rate trends). Movement classes are recomputed in Python because the query's `movement_type` is unreliable.
 
 See `workflows/dashboard_generation.md` for details.
 
 > Not yet wired in: `sql/internal_collections2.sql` (Q08b effort-cost vs outsourcing analysis), and the richer OOT columns (activation lag, payer lifecycle, MPM-band cohorts, provision coverage).
+
+### `tools/generate_newsletter.py`
+Generates the email-ready collections newsletter from `output/metrics.json` (run `generate_dashboard.py` first). Deterministic rules select & rank Highlights/Lowlights (exact figures), then Claude (`claude-sonnet-4-6`) polishes the prose — falling back to rule-based text if `ANTHROPIC_API_KEY` is absent or the call fails.
+
+```bash
+python tools/generate_newsletter.py
+```
+
+Writes `output/newsletter.html` and `output/newsletter.eml` (HTML body + `dashboard.html` attached). **File-only — never sends email.** Recipients/subject can be pre-filled via `assets/recipients.json` (used only to populate the `.eml`). See `workflows/newsletter_generation.md`.
 
 ---
 
@@ -128,6 +152,9 @@ See `workflows/dashboard_generation.md` for details.
 
 ### `workflows/dashboard_generation.md`
 SOP for the collections dashboard — read this first before running any dashboard-related tool. Covers: setup steps, date range usage, edge cases (missing logo, empty data, DB failure), and troubleshooting.
+
+### `workflows/newsletter_generation.md`
+SOP for the email newsletter — hybrid (deterministic facts + Claude prose) Highlights/Lowlights from `metrics.json`. File-only; documents `ANTHROPIC_API_KEY` setup, recipients config, and that nothing is auto-sent.
 
 ---
 

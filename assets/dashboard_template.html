@@ -108,6 +108,25 @@
     .seg-table tbody tr:hover td { background: rgba(1,169,230,0.04); }
     .seg-table .seg-first td { border-top: 2px solid var(--border); }
 
+    /* ── Transition matrix ── */
+    .matrix-table { border-collapse: collapse; font-size: 0.8rem; margin: 0 auto; }
+    .matrix-table th {
+      font-size: 0.66rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em;
+      color: var(--muted); padding: 7px 9px; border-bottom: 2px solid var(--border);
+      text-align: center; white-space: nowrap;
+    }
+    .matrix-table th.lt { text-align: left; }
+    .matrix-table .rowhead { font-weight: 700; color: var(--text); white-space: nowrap; padding: 6px 10px; text-align: left; }
+    .matrix-table td.cell {
+      text-align: center; padding: 6px 9px; min-width: 62px;
+      border: 1px solid #eef4f8; line-height: 1.15;
+    }
+    .matrix-table td.cell .pct { display: block; font-weight: 600; color: var(--text); }
+    .matrix-table td.cell .cnt { display: block; font-size: 0.62rem; color: var(--muted); }
+    .matrix-table td.cell.dark .pct, .matrix-table td.cell.dark .cnt { color: #fff; }
+    .matrix-table td.cell.diag { outline: 2px solid var(--accent); outline-offset: -2px; }
+    .matrix-table td.opening { text-align: right; font-weight: 600; color: var(--muted); white-space: nowrap; padding: 6px 10px; }
+
     /* ── Book tabs ── */
     .book-tabs { display: flex; gap: 4px; border-bottom: 2px solid var(--border); }
     .book-tab {
@@ -147,6 +166,7 @@
   <div class="book-tabs">
     <button class="book-tab active" data-book="interm">In-Term Arrears</button>
     <button class="book-tab" data-book="oot">Out-of-Term Recoveries</button>
+    <button class="book-tab" data-book="roll">Roll Rates</button>
   </div>
 
   <div id="view-interm" class="book-view active">
@@ -273,6 +293,66 @@
   </div>
 
   </div><!-- /view-oot -->
+
+  <div id="view-roll" class="book-view">
+
+  <!-- Roll-rate summary cards -->
+  <p class="section-title">Roll rates &middot; latest full month (whole book)</p>
+  <div class="kpi-grid">
+    {% for c in roll_cards %}
+    <div class="kpi-card">
+      <span class="kpi-label">{{ c.label }}</span>
+      <span class="kpi-value">{{ c.value }}</span>
+      {% if c.delta %}
+      <div class="kpi-foot"><span class="badge {{ c.delta_cls }}">{{ c.delta }}</span></div>
+      {% endif %}
+      {% if c.sub %}<span class="kpi-sub">{{ c.sub }}</span>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Transition matrix -->
+  <p class="section-title">DPD transition matrix &middot; 13-month pooled (row % of opening band)</p>
+  <div class="table-card">
+    <table class="matrix-table">
+      <thead>
+        <tr>
+          <th class="lt">DPD start ↓ / end →</th>
+          {% for c in roll_matrix.col_labels %}<th>{{ c }}</th>{% endfor %}
+          <th>Opening (n)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in roll_matrix.rows %}
+        <tr>
+          <td class="lt rowhead">{{ row.label }}</td>
+          {% for cell in row.cells %}
+          <td class="cell{{ ' diag' if cell.diag else '' }}{{ ' dark' if cell.dark else '' }}" style="background: {{ cell.bg }}">
+            <span class="pct">{{ cell.pct }}</span>
+            {% if cell.count %}<span class="cnt">{{ cell.count }}</span>{% endif %}
+          </td>
+          {% endfor %}
+          <td class="opening">{{ row.opening }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Roll-rate charts -->
+  <p class="section-title">Movement trends</p>
+  <div class="chart-grid">
+    <div class="chart-card">
+      <h2>DPD movement composition (% of accounts)</h2>
+      <div class="chart-wrap"><canvas id="chartRollComposition"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h2>Key roll rates over time (%)</h2>
+      <div class="chart-wrap"><canvas id="chartRollTrends"></canvas></div>
+    </div>
+  </div>
+
+  </div><!-- /view-roll -->
 
 </main>
 
@@ -431,6 +511,57 @@ new Chart(document.getElementById('chartOotAutoEffort'), {
     responsive: true, maintainAspectRatio: false,
     plugins: { legend: { position: 'top', align: 'start', labels: { boxWidth: 12, padding: 12 } } },
     scales: { x: { stacked: true, grid, ticks: { maxRotation: 45 } }, y: { stacked: true, grid, ticks: { callback: pctTick } } },
+  },
+});
+
+// ════════════════════════════════════════════════════════════════
+// Roll Rates (DPD migration)
+// ════════════════════════════════════════════════════════════════
+const ROLL = {{ roll_chart_data_json }};
+
+// Movement colours: greens = good (cure/current/stable), reds = bad (roll forward/default).
+const MOVE_COLORS = {
+  'New': '#94a3b8', 'Current': '#2e9e6b', 'Cured': '#14b8a6',
+  'Rolled Backward': '#7cc4f2', 'Stable': '#b8860b',
+  'Rolled Forward': '#ef8f3c', 'Default': '#e2483d',
+};
+
+// 1 — Movement composition (stacked % bar)
+new Chart(document.getElementById('chartRollComposition'), {
+  type: 'bar',
+  data: {
+    labels: ROLL.months,
+    datasets: ROLL.composition.map(ds => ({
+      label: ds.label, data: ds.data,
+      backgroundColor: (MOVE_COLORS[ds.label] || '#888') + 'dd',
+      borderColor: MOVE_COLORS[ds.label] || '#888', borderWidth: 1, borderRadius: 2,
+    })),
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'top', align: 'start', labels: { boxWidth: 12, padding: 10 } } },
+    scales: { x: { stacked: true, grid, ticks: { maxRotation: 45 } },
+              y: { stacked: true, grid, max: 100, ticks: { callback: pctTick } } },
+  },
+});
+
+// 2 — Key roll rates over time (lines)
+new Chart(document.getElementById('chartRollTrends'), {
+  type: 'line',
+  data: {
+    labels: ROLL.months,
+    datasets: [
+      { label: 'Cure',           data: ROLL.cure,    borderColor: '#14b8a6' },
+      { label: 'Forward-roll',   data: ROLL.forward, borderColor: '#ef8f3c' },
+      { label: 'Default',        data: ROLL.default, borderColor: '#e2483d' },
+      { label: 'Stable/Current', data: ROLL.stable,  borderColor: '#2e9e6b' },
+    ].map(ds => ({ ...ds, backgroundColor: ds.borderColor + '22',
+                   borderWidth: 2, pointRadius: 2.5, tension: 0.35, fill: false, spanGaps: true })),
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'top', align: 'start', labels: { boxWidth: 12, padding: 12 } } },
+    scales: { x: { grid, ticks: { maxRotation: 45 } }, y: { grid, min: 0, ticks: { callback: pctTick } } },
   },
 });
 

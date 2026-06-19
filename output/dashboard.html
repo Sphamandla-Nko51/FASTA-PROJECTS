@@ -108,6 +108,25 @@
     .seg-table tbody tr:hover td { background: rgba(1,169,230,0.04); }
     .seg-table .seg-first td { border-top: 2px solid var(--border); }
 
+    /* ── Transition matrix ── */
+    .matrix-table { border-collapse: collapse; font-size: 0.8rem; margin: 0 auto; }
+    .matrix-table th {
+      font-size: 0.66rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em;
+      color: var(--muted); padding: 7px 9px; border-bottom: 2px solid var(--border);
+      text-align: center; white-space: nowrap;
+    }
+    .matrix-table th.lt { text-align: left; }
+    .matrix-table .rowhead { font-weight: 700; color: var(--text); white-space: nowrap; padding: 6px 10px; text-align: left; }
+    .matrix-table td.cell {
+      text-align: center; padding: 6px 9px; min-width: 62px;
+      border: 1px solid #eef4f8; line-height: 1.15;
+    }
+    .matrix-table td.cell .pct { display: block; font-weight: 600; color: var(--text); }
+    .matrix-table td.cell .cnt { display: block; font-size: 0.62rem; color: var(--muted); }
+    .matrix-table td.cell.dark .pct, .matrix-table td.cell.dark .cnt { color: #fff; }
+    .matrix-table td.cell.diag { outline: 2px solid var(--accent); outline-offset: -2px; }
+    .matrix-table td.opening { text-align: right; font-weight: 600; color: var(--muted); white-space: nowrap; padding: 6px 10px; }
+
     /* ── Book tabs ── */
     .book-tabs { display: flex; gap: 4px; border-bottom: 2px solid var(--border); }
     .book-tab {
@@ -138,7 +157,7 @@
   </div>
   <div class="header-meta">
     <div>Latest reporting month: May 2026</div>
-    <div>Generated: 2026-06-17 14:13</div>
+    <div>Generated: 2026-06-19 12:01</div>
   </div>
 </header>
 
@@ -147,6 +166,7 @@
   <div class="book-tabs">
     <button class="book-tab active" data-book="interm">In-Term Arrears</button>
     <button class="book-tab" data-book="oot">Out-of-Term Recoveries</button>
+    <button class="book-tab" data-book="roll">Roll Rates</button>
   </div>
 
   <div id="view-interm" class="book-view active">
@@ -900,17 +920,421 @@
 
   </div><!-- /view-oot -->
 
+  <div id="view-roll" class="book-view">
+
+  <!-- Roll-rate summary cards -->
+  <p class="section-title">Roll rates &middot; latest full month (whole book)</p>
+  <div class="kpi-grid">
+    
+    <div class="kpi-card">
+      <span class="kpi-label">Cure rate</span>
+      <span class="kpi-value">1.7%</span>
+      
+      <div class="kpi-foot"><span class="badge neg">-0.6pp</span></div>
+      
+      <span class="kpi-sub">% of accounts · May 2026</span>
+    </div>
+    
+    <div class="kpi-card">
+      <span class="kpi-label">Forward-roll rate</span>
+      <span class="kpi-value">65.8%</span>
+      
+      <div class="kpi-foot"><span class="badge neg">+1.0pp</span></div>
+      
+      <span class="kpi-sub">% of accounts · May 2026</span>
+    </div>
+    
+    <div class="kpi-card">
+      <span class="kpi-label">Default rate</span>
+      <span class="kpi-value">57.5%</span>
+      
+      <div class="kpi-foot"><span class="badge neg">+0.7pp</span></div>
+      
+      <span class="kpi-sub">% of accounts · May 2026</span>
+    </div>
+    
+    <div class="kpi-card">
+      <span class="kpi-label">Stable/Current</span>
+      <span class="kpi-value">17.7%</span>
+      
+      <div class="kpi-foot"><span class="badge neg">-0.4pp</span></div>
+      
+      <span class="kpi-sub">% of accounts · May 2026</span>
+    </div>
+    
+  </div>
+
+  <!-- Transition matrix -->
+  <p class="section-title">DPD transition matrix &middot; 13-month pooled (row % of opening band)</p>
+  <div class="table-card">
+    <table class="matrix-table">
+      <thead>
+        <tr>
+          <th class="lt">DPD start ↓ / end →</th>
+          <th>Current</th><th>Grace Arrears</th><th>10DPD</th><th>30DPD</th><th>60DPD</th><th>90DPD</th><th>91DPD</th>
+          <th>Opening (n)</th>
+        </tr>
+      </thead>
+      <tbody>
+        
+        <tr>
+          <td class="lt rowhead">New</td>
+          
+          <td class="cell dark" style="background: rgba(1,169,230,0.925)">
+            <span class="pct">86.8%</span>
+            <span class="cnt">250,348</span>
+          </td>
+          
+          <td class="cell" style="background: rgba(1,169,230,0.165)">
+            <span class="pct">3.8%</span>
+            <span class="cnt">10,864</span>
+          </td>
+          
+          <td class="cell" style="background: rgba(1,169,230,0.236)">
+            <span class="pct">7.3%</span>
+            <span class="cnt">20,967</span>
+          </td>
+          
+          <td class="cell" style="background: rgba(1,169,230,0.122)">
+            <span class="pct">2.2%</span>
+            <span class="cnt">6,329</span>
+          </td>
+          
+          <td class="cell" style="background: rgba(1,169,230,0.0)">
+            <span class="pct">·</span>
+            
+          </td>
+          
+          <td class="cell" style="background: rgba(1,169,230,0.0)">
+            <span class="pct">·</span>
+            
+          </td>
+          
+          <td class="cell" style="background: rgba(1,169,230,0.0)">
+            <span class="pct">·</span>
+            
+          </td>
+          
+          <td class="opening">288,508</td>
+        </tr>
+        
+        <tr>
+          <td class="lt rowhead">Current</td>
+          
+          <td class="cell diag dark" style="background: rgba(1,169,230,0.958)">
+            <span class="pct">92.6%</span>
+            <span class="cnt">332,211</span>
+          </td>
+          
+          <td class="cell" style="background: rgba(1,169,230,0.104)">
+            <span class="pct">1.6%</span>
+            <span class="cnt">5,902</span>
+          </td>
+          
+          <td class="cell" style="background: rgba(1,169,230,0.169)">
+            <span class="pct">3.9%</span>
+            <span class="cnt">14,138</span>
+          </td>
+          
+          <td class="cell" style="background: rgba(1,169,230,0.088)">
+            <span class="pct">1.2%</span>
+            <span class="cnt">4,294</span>
+          </td>
+          
+          <td class="cell" style="background: rgba(1,169,230,0.064)">
+            <span class="pct">0.7%</span>
+            <span class="cnt">2,396</span>
+          </td>
+          
+          <td class="cell" style="background: rgba(1,169,230,0.0)">
+            <span class="pct">·</span>
+            
+          </td>
+          
+          <td class="cell" style="background: rgba(1,169,230,0.0)">
+            <span class="pct">·</span>
+            
+          </td>
+          
+          <td class="opening">358,941</td>
+        </tr>
+        
+        <tr>
+          <td class="lt rowhead">Grace Arrears</td>
+          
+          <td class="cell dark" style="background: rgba(1,169,230,0.637)">
+            <span class="pct">44.1%</span>
+            <span class="cnt">7,661</span>
+          </td>
+          
+          <td class="cell diag" style="background: rgba(1,169,230,0.242)">
+            <span class="pct">7.6%</span>
+            <span class="cnt">1,315</span>
+          </td>
+          
+          <td class="cell" style="background: rgba(1,169,230,0.164)">
+            <span class="pct">3.7%</span>
+            <span class="cnt">647</span>
+          </td>
+          
+          <td class="cell" style="background: rgba(1,169,230,0.211)">
+            <span class="pct">5.9%</span>
+            <span class="cnt">1,029</span>
+          </td>
+          
+          <td class="cell dark" style="background: rgba(1,169,230,0.593)">
+            <span class="pct">38.7%</span>
+            <span class="cnt">6,718</span>
+          </td>
+          
+          <td class="cell" style="background: rgba(1,169,230,0.0)">
+            <span class="pct">·</span>
+            
+          </td>
+          
+          <td class="cell" style="background: rgba(1,169,230,0.0)">
+            <span class="pct">·</span>
+            
+          </td>
+          
+          <td class="opening">17,370</td>
+        </tr>
+        
+        <tr>
+          <td class="lt rowhead">10DPD</td>
+          
+          <td class="cell" style="background: rgba(1,169,230,0.457)">
+            <span class="pct">24.1%</span>
+            <span class="cnt">9,630</span>
+          </td>
+          
+          <td class="cell" style="background: rgba(1,169,230,0.114)">
+            <span class="pct">1.9%</span>
+            <span class="cnt">772</span>
+          </td>
+          
+          <td class="cell diag" style="background: rgba(1,169,230,0.255)">
+            <span class="pct">8.3%</span>
+            <span class="cnt">3,326</span>
+          </td>
+          
+          <td class="cell" style="background: rgba(1,169,230,0.068)">
+            <span class="pct">0.7%</span>
+            <span class="cnt">299</span>
+          </td>
+          
+          <td class="cell dark" style="background: rgba(1,169,230,0.789)">
+            <span class="pct">64.9%</span>
+            <span class="cnt">25,961</span>
+          </td>
+          
+          <td class="cell" style="background: rgba(1,169,230,0.0)">
+            <span class="pct">·</span>
+            
+          </td>
+          
+          <td class="cell" style="background: rgba(1,169,230,0.0)">
+            <span class="pct">·</span>
+            
+          </td>
+          
+          <td class="opening">39,988</td>
+        </tr>
+        
+        <tr>
+          <td class="lt rowhead">30DPD</td>
+          
+          <td class="cell" style="background: rgba(1,169,230,0.424)">
+            <span class="pct">21.0%</span>
+            <span class="cnt">2,838</span>
+          </td>
+          
+          <td class="cell" style="background: rgba(1,169,230,0.02)">
+            <span class="pct">0.1%</span>
+            <span class="cnt">11</span>
+          </td>
+          
+          <td class="cell" style="background: rgba(1,169,230,0.248)">
+            <span class="pct">7.9%</span>
+            <span class="cnt">1,067</span>
+          </td>
+          
+          <td class="cell diag" style="background: rgba(1,169,230,0.233)">
+            <span class="pct">7.1%</span>
+            <span class="cnt">957</span>
+          </td>
+          
+          <td class="cell dark" style="background: rgba(1,169,230,0.772)">
+            <span class="pct">62.5%</span>
+            <span class="cnt">8,437</span>
+          </td>
+          
+          <td class="cell" style="background: rgba(1,169,230,0.096)">
+            <span class="pct">1.4%</span>
+            <span class="cnt">189</span>
+          </td>
+          
+          <td class="cell" style="background: rgba(1,169,230,0.0)">
+            <span class="pct">·</span>
+            
+          </td>
+          
+          <td class="opening">13,499</td>
+        </tr>
+        
+        <tr>
+          <td class="lt rowhead">60DPD</td>
+          
+          <td class="cell" style="background: rgba(1,169,230,0.279)">
+            <span class="pct">9.8%</span>
+            <span class="cnt">4,514</span>
+          </td>
+          
+          <td class="cell" style="background: rgba(1,169,230,0.02)">
+            <span class="pct">0.1%</span>
+            <span class="cnt">37</span>
+          </td>
+          
+          <td class="cell" style="background: rgba(1,169,230,0.031)">
+            <span class="pct">0.2%</span>
+            <span class="cnt">83</span>
+          </td>
+          
+          <td class="cell" style="background: rgba(1,169,230,0.036)">
+            <span class="pct">0.2%</span>
+            <span class="cnt">109</span>
+          </td>
+          
+          <td class="cell diag" style="background: rgba(1,169,230,0.183)">
+            <span class="pct">4.5%</span>
+            <span class="cnt">2,088</span>
+          </td>
+          
+          <td class="cell dark" style="background: rgba(1,169,230,0.915)">
+            <span class="pct">85.1%</span>
+            <span class="cnt">39,062</span>
+          </td>
+          
+          <td class="cell" style="background: rgba(1,169,230,0.013)">
+            <span class="pct">0.0%</span>
+            <span class="cnt">18</span>
+          </td>
+          
+          <td class="opening">45,911</td>
+        </tr>
+        
+        <tr>
+          <td class="lt rowhead">90DPD</td>
+          
+          <td class="cell" style="background: rgba(1,169,230,0.2)">
+            <span class="pct">5.4%</span>
+            <span class="cnt">2,142</span>
+          </td>
+          
+          <td class="cell" style="background: rgba(1,169,230,0.0)">
+            <span class="pct">·</span>
+            
+          </td>
+          
+          <td class="cell" style="background: rgba(1,169,230,0.0)">
+            <span class="pct">·</span>
+            
+          </td>
+          
+          <td class="cell" style="background: rgba(1,169,230,0.005)">
+            <span class="pct">0.0%</span>
+            <span class="cnt">3</span>
+          </td>
+          
+          <td class="cell" style="background: rgba(1,169,230,0.027)">
+            <span class="pct">0.1%</span>
+            <span class="cnt">58</span>
+          </td>
+          
+          <td class="cell diag" style="background: rgba(1,169,230,0.139)">
+            <span class="pct">2.7%</span>
+            <span class="cnt">1,097</span>
+          </td>
+          
+          <td class="cell dark" style="background: rgba(1,169,230,0.954)">
+            <span class="pct">91.7%</span>
+            <span class="cnt">36,609</span>
+          </td>
+          
+          <td class="opening">39,909</td>
+        </tr>
+        
+        <tr>
+          <td class="lt rowhead">91DPD</td>
+          
+          <td class="cell" style="background: rgba(1,169,230,0.075)">
+            <span class="pct">0.9%</span>
+            <span class="cnt">9,198</span>
+          </td>
+          
+          <td class="cell" style="background: rgba(1,169,230,0.0)">
+            <span class="pct">·</span>
+            
+          </td>
+          
+          <td class="cell" style="background: rgba(1,169,230,0.0)">
+            <span class="pct">·</span>
+            
+          </td>
+          
+          <td class="cell" style="background: rgba(1,169,230,0.0)">
+            <span class="pct">·</span>
+            
+          </td>
+          
+          <td class="cell" style="background: rgba(1,169,230,0.0)">
+            <span class="pct">·</span>
+            
+          </td>
+          
+          <td class="cell" style="background: rgba(1,169,230,0.004)">
+            <span class="pct">0.0%</span>
+            <span class="cnt">36</span>
+          </td>
+          
+          <td class="cell diag dark" style="background: rgba(1,169,230,0.995)">
+            <span class="pct">99.1%</span>
+            <span class="cnt">1,014,875</span>
+          </td>
+          
+          <td class="opening">1,024,109</td>
+        </tr>
+        
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Roll-rate charts -->
+  <p class="section-title">Movement trends</p>
+  <div class="chart-grid">
+    <div class="chart-card">
+      <h2>DPD movement composition (% of accounts)</h2>
+      <div class="chart-wrap"><canvas id="chartRollComposition"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h2>Key roll rates over time (%)</h2>
+      <div class="chart-wrap"><canvas id="chartRollTrends"></canvas></div>
+    </div>
+  </div>
+
+  </div><!-- /view-roll -->
+
 </main>
 
 <footer>
   Yield = net_receipts / (opening_arrears + instalment_due) &middot; Payer rate = payers / loan_count &middot;
   Auto = DebiCheck (Instalment Receipt) &middot; Effort = agent (Other Receipt)<br>
   Population: opening segments MP1 · MP2 · MP3+ (in-term arrears) &middot;
-  FASTA Internal Collections &middot; 2026-06-17 14:13 &middot; Source: redblade
+  FASTA Internal Collections &middot; 2026-06-19 12:01 &middot; Source: redblade
 </footer>
 
 <script>
-const DATA = {"months": ["May 25", "Jun 25", "Jul 25", "Aug 25", "Sep 25", "Oct 25", "Nov 25", "Dec 25", "Jan 26", "Feb 26", "Mar 26", "Apr 26", "May 26"], "effort_yield_datasets": [{"label": "New Loan", "data": [3.2881, 1.5642, 5.2077, 2.715, 3.8445, 8.4428, 3.825, 19.3418, 5.0317, 6.9975, 7.5024, 3.8219, 5.1966]}, {"label": "MP0", "data": [8.5364, 7.0186, 8.3057, 7.1415, 7.6606, 9.6096, 6.7648, 15.2744, 6.9862, 8.4189, 9.4722, 10.5789, 8.1224]}, {"label": "MP1", "data": [9.6268, 9.2267, 10.7329, 10.3789, 9.1985, 8.9394, 9.1674, 10.229, 12.261, 8.3731, 9.5832, 8.5694, 9.7273]}, {"label": "MP2", "data": [4.7144, 3.3676, 4.5244, 5.9102, 3.9845, 4.204, 2.6417, 2.8559, 2.8103, 3.9373, 4.1485, 4.1919, 5.6018]}, {"label": "MP3+", "data": [6.4339, 1.3767, 8.3834, 1.4349, 5.1868, 8.103, 3.1948, 2.3067, 2.9338, 0.0, 4.9116, 5.5627, 0.6969]}], "collection_rate_datasets": [{"label": "New Loan", "data": [39.296, 10.2454, 27.6614, 18.6318, 55.1683, 73.8079, 75.1332, 84.1489, 62.4625, 68.0957, 58.0461, 55.0552, 50.2633]}, {"label": "MP0", "data": [55.1625, 23.4359, 33.9824, 29.5897, 35.3101, 58.3737, 68.2455, 82.6982, 49.5739, 44.7686, 60.7918, 47.4834, 50.0287]}, {"label": "MP1", "data": [29.6233, 24.4977, 32.8241, 27.946, 30.9509, 30.5953, 30.1284, 30.5355, 34.8196, 26.3952, 30.6744, 27.6923, 28.8511]}, {"label": "MP2", "data": [8.6498, 4.8676, 9.7279, 10.5827, 9.4397, 9.9295, 6.4889, 6.822, 5.738, 8.2918, 9.6283, 7.7529, 9.6487]}, {"label": "MP3+", "data": [8.2033, 5.2984, 11.9616, 6.7686, 6.3397, 16.9142, 3.1948, 2.3067, 6.5351, 0.0, 8.8172, 5.7268, 0.6969]}], "mp1_auto": [71.3203, 64.3584, 69.15, 65.8979, 73.475, 73.5264, 72.3782, 72.8364, 69.0763, 71.3795, 71.6117, 71.7611, 68.4384], "mp1_effort": [32.4975, 37.6637, 32.6983, 37.1391, 29.7196, 29.2183, 30.4276, 33.4988, 35.2128, 31.7219, 31.2418, 30.945, 33.7154], "arrears_move_datasets": [{"label": "New Loan", "data": [0.3681, 0.3975, 0.4684, 0.4156, 0.5851, 0.5774, 0.4539, 1.2606, 0.7425, 0.3307, 0.6973, 0.5559, 0.7563]}, {"label": "MP0", "data": [1.5733, 1.8971, 1.3531, 1.7514, 1.6363, 2.3321, 1.9188, 4.3106, 2.9554, 2.1222, 2.0896, 2.24, 2.3192]}, {"label": "MP1", "data": [1.637, 1.428, 1.163, 1.1835, 1.1745, 1.1788, 1.5045, 1.448, 1.4356, 2.4638, 1.6627, 1.4688, 1.7572]}, {"label": "MP2", "data": [0.5848, 0.9289, 0.4448, 0.523, 0.4771, 0.4441, 0.5821, 0.661, 0.8228, 0.9047, 1.0077, 0.7558, 0.6383]}, {"label": "MP3+", "data": [0.0013, 0.0079, -0.0065, 0.0038, 0.0091, -0.0025, 0.006, 0.0047, 0.006, 0.0258, 0.0201, 0.0397, 0.058]}]};
+const DATA = {"months": ["May 25", "Jun 25", "Jul 25", "Aug 25", "Sep 25", "Oct 25", "Nov 25", "Dec 25", "Jan 26", "Feb 26", "Mar 26", "Apr 26", "May 26"], "effort_yield_datasets": [{"label": "New Loan", "data": [3.2881, 1.5642, 5.2077, 2.715, 3.8445, 8.4428, 3.825, 19.3418, 5.0317, 6.9975, 7.5024, 3.8219, 5.1966]}, {"label": "MP0", "data": [8.5364, 7.0186, 8.3057, 7.1415, 7.6606, 9.6096, 6.7648, 15.2744, 6.9862, 8.4189, 9.4722, 10.5789, 8.1224]}, {"label": "MP1", "data": [9.6268, 9.2267, 10.7329, 10.3789, 9.1985, 8.9394, 9.1674, 10.229, 12.261, 8.3731, 9.5832, 8.5694, 9.7273]}, {"label": "MP2", "data": [4.7144, 3.3676, 4.5244, 5.9102, 3.9845, 4.204, 2.6417, 2.8559, 2.8103, 3.9373, 4.1485, 4.1919, 5.6018]}, {"label": "MP3+", "data": [6.4339, 1.3767, 8.3834, 1.4349, 5.1868, 8.103, 3.1948, 2.3067, 2.9338, 0.0, 4.9116, 5.5627, 0.6969]}], "collection_rate_datasets": [{"label": "New Loan", "data": [39.296, 10.2454, 27.6614, 18.6318, 55.1683, 73.8079, 75.1332, 84.1489, 62.4625, 68.0957, 58.0461, 55.0552, 50.2633]}, {"label": "MP0", "data": [55.1625, 23.4359, 33.9824, 29.5897, 35.3101, 58.3737, 68.2455, 82.6982, 49.5739, 44.7686, 60.7918, 47.4834, 50.0287]}, {"label": "MP1", "data": [29.6233, 24.4977, 32.8241, 27.946, 30.9509, 30.5953, 30.1284, 30.5355, 34.8196, 26.3952, 30.6744, 27.6923, 28.8511]}, {"label": "MP2", "data": [8.6498, 4.8676, 9.7279, 10.5827, 9.4397, 9.9295, 6.4889, 6.822, 5.738, 8.2918, 9.6283, 7.7529, 9.6487]}, {"label": "MP3+", "data": [8.2033, 5.2984, 11.9616, 6.7686, 6.3397, 16.9142, 3.1948, 2.3067, 6.5351, 0.0, 8.8172, 5.7268, 0.6969]}], "mp1_auto": [71.3203, 64.3584, 69.15, 65.8979, 73.475, 73.5264, 72.3782, 72.8364, 69.0763, 71.3795, 71.6117, 71.7611, 68.4384], "mp1_effort": [32.4975, 37.6637, 32.6983, 37.1391, 29.7196, 29.2183, 30.4276, 33.4988, 35.2128, 31.7219, 31.2418, 30.945, 33.7154], "arrears_move_datasets": [{"label": "New Loan", "data": [0.3681, 0.3975, 0.4684, 0.4156, 0.5851, 0.5774, 0.4539, 1.2606, 0.7425, 0.3307, 0.6973, 0.5559, 0.7559]}, {"label": "MP0", "data": [1.5733, 1.8971, 1.3531, 1.7514, 1.6363, 2.3321, 1.9188, 4.3106, 2.9554, 2.1222, 2.0896, 2.24, 2.318]}, {"label": "MP1", "data": [1.637, 1.428, 1.163, 1.1835, 1.1745, 1.1788, 1.5045, 1.448, 1.4356, 2.4638, 1.6627, 1.4688, 1.7562]}, {"label": "MP2", "data": [0.5848, 0.9289, 0.4448, 0.523, 0.4771, 0.4441, 0.5821, 0.661, 0.8228, 0.9047, 1.0077, 0.7558, 0.638]}, {"label": "MP3+", "data": [0.0013, 0.0079, -0.0065, 0.0038, 0.0091, -0.0025, 0.006, 0.0047, 0.006, 0.0258, 0.0201, 0.0397, 0.058]}]};
 
 const PRIMARY   = '#01a9e6';
 const SECONDARY = '#69be21';
@@ -991,7 +1415,7 @@ new Chart(document.getElementById('chartArrearsMove'), {
 // ════════════════════════════════════════════════════════════════
 // Out-of-Term Recoveries
 // ════════════════════════════════════════════════════════════════
-const OOT  = {"months": ["May 25", "Jun 25", "Jul 25", "Aug 25", "Sep 25", "Oct 25", "Nov 25", "Dec 25", "Jan 26", "Feb 26", "Mar 26", "Apr 26", "May 26"], "collections": [3.6, 3.505, 4.04, 3.994, 3.534, 4.155, 3.903, 3.762, 3.096, 3.652, 4.728, 3.845, 4.381], "collections_3m": [3.6, 3.553, 3.715, 3.847, 3.856, 3.894, 3.864, 3.94, 3.587, 3.503, 3.825, 4.075, 4.318], "yield": [1.501, 1.42, 1.597, 1.534, 1.406, 1.615, 1.486, 1.402, 1.122, 1.289, 1.622, 1.285, 1.42], "yield_3m": [1.501, 1.461, 1.506, 1.517, 1.512, 1.518, 1.502, 1.501, 1.337, 1.271, 1.345, 1.399, 1.443], "payer_rate": [8.647, 7.629, 8.129, 7.648, 7.598, 8.063, 7.909, 7.717, 4.97, 7.478, 8.107, 7.209, 7.624], "payer_rate_3m": [8.647, 8.138, 8.135, 7.802, 7.792, 7.77, 7.857, 7.897, 6.866, 6.722, 6.851, 7.598, 7.646], "auto": [39.15, 31.19, 37.28, 32.19, 28.3, 39.95, 32.84, 40.57, 42.41, 37.74, 34.32, 38.14, 32.88], "effort": [66.79, 71.78, 65.6, 70.91, 74.91, 64.56, 70.08, 70.09, 62.54, 66.73, 70.22, 66.05, 71.2]};
+const OOT  = {"months": ["May 25", "Jun 25", "Jul 25", "Aug 25", "Sep 25", "Oct 25", "Nov 25", "Dec 25", "Jan 26", "Feb 26", "Mar 26", "Apr 26", "May 26"], "collections": [3.6, 3.505, 4.04, 3.994, 3.534, 4.155, 3.903, 3.762, 3.096, 3.652, 4.728, 3.845, 4.381], "collections_3m": [3.6, 3.553, 3.715, 3.847, 3.856, 3.894, 3.864, 3.94, 3.587, 3.503, 3.825, 4.075, 4.318], "yield": [1.501, 1.42, 1.597, 1.534, 1.406, 1.614, 1.485, 1.402, 1.122, 1.289, 1.622, 1.285, 1.42], "yield_3m": [1.501, 1.461, 1.506, 1.517, 1.512, 1.518, 1.502, 1.501, 1.337, 1.271, 1.345, 1.399, 1.442], "payer_rate": [8.647, 7.629, 8.129, 7.648, 7.598, 8.063, 7.909, 7.717, 4.97, 7.478, 8.107, 7.209, 7.624], "payer_rate_3m": [8.647, 8.138, 8.135, 7.802, 7.792, 7.77, 7.857, 7.897, 6.866, 6.722, 6.851, 7.598, 7.646], "auto": [39.15, 31.19, 37.28, 32.19, 28.3, 39.95, 32.84, 40.57, 42.41, 37.74, 34.32, 38.14, 32.88], "effort": [66.79, 71.78, 65.6, 70.91, 74.91, 64.56, 70.08, 70.09, 62.54, 66.73, 70.22, 66.05, 71.2]};
 const GOLD = '#c9a24b';
 const AVG3 = '#9aa7bd';
 
@@ -1057,6 +1481,57 @@ new Chart(document.getElementById('chartOotAutoEffort'), {
     responsive: true, maintainAspectRatio: false,
     plugins: { legend: { position: 'top', align: 'start', labels: { boxWidth: 12, padding: 12 } } },
     scales: { x: { stacked: true, grid, ticks: { maxRotation: 45 } }, y: { stacked: true, grid, ticks: { callback: pctTick } } },
+  },
+});
+
+// ════════════════════════════════════════════════════════════════
+// Roll Rates (DPD migration)
+// ════════════════════════════════════════════════════════════════
+const ROLL = {"months": ["Apr 25", "May 25", "Jun 25", "Jul 25", "Aug 25", "Sep 25", "Oct 25", "Nov 25", "Dec 25", "Jan 26", "Feb 26", "Mar 26", "Apr 26", "May 26"], "composition": [{"label": "New", "data": [16.91, 14.39, 15.9, 16.09, 15.81, 17.28, 16.54, 17.93, 14.58, 18.53, 14.3, 13.67, 14.66, 14.82]}, {"label": "Current", "data": [18.64, 19.93, 18.1, 17.97, 17.46, 17.09, 17.91, 17.26, 18.4, 17.14, 19.88, 19.74, 17.65, 17.26]}, {"label": "Cured", "data": [1.87, 1.99, 1.86, 1.68, 2.26, 2.02, 1.71, 2.13, 1.94, 1.82, 1.92, 2.32, 2.29, 1.7]}, {"label": "Rolled Backward", "data": [0.24, 0.02, 0.02, 0.02, 0.02, 0.01, 0.01, 0.12, 0.01, 0.71, 0.24, 0.04, 0.14, 0.01]}, {"label": "Stable", "data": [0.44, 0.56, 0.4, 0.45, 0.61, 0.44, 0.53, 0.6, 0.26, 0.21, 0.79, 0.53, 0.48, 0.42]}, {"label": "Rolled Forward", "data": [8.82, 8.82, 7.69, 7.84, 7.22, 6.92, 7.32, 7.16, 8.71, 7.77, 8.47, 8.45, 7.97, 8.31]}, {"label": "Default", "data": [53.07, 54.29, 56.03, 55.95, 56.62, 56.23, 55.99, 54.79, 56.11, 53.81, 54.4, 55.26, 56.82, 57.48]}], "cure": [1.87, 1.99, 1.86, 1.68, 2.26, 2.02, 1.71, 2.13, 1.94, 1.82, 1.92, 2.32, 2.29, 1.7], "forward": [61.9, 63.11, 63.72, 63.79, 63.84, 63.16, 63.31, 61.95, 64.82, 61.58, 62.87, 63.7, 64.79, 65.79], "default": [53.07, 54.29, 56.03, 55.95, 56.62, 56.23, 55.99, 54.79, 56.11, 53.81, 54.4, 55.26, 56.82, 57.48], "stable": [19.08, 20.49, 18.5, 18.42, 18.07, 17.53, 18.44, 17.87, 18.66, 17.35, 20.67, 20.27, 18.12, 17.68]};
+
+// Movement colours: greens = good (cure/current/stable), reds = bad (roll forward/default).
+const MOVE_COLORS = {
+  'New': '#94a3b8', 'Current': '#2e9e6b', 'Cured': '#14b8a6',
+  'Rolled Backward': '#7cc4f2', 'Stable': '#b8860b',
+  'Rolled Forward': '#ef8f3c', 'Default': '#e2483d',
+};
+
+// 1 — Movement composition (stacked % bar)
+new Chart(document.getElementById('chartRollComposition'), {
+  type: 'bar',
+  data: {
+    labels: ROLL.months,
+    datasets: ROLL.composition.map(ds => ({
+      label: ds.label, data: ds.data,
+      backgroundColor: (MOVE_COLORS[ds.label] || '#888') + 'dd',
+      borderColor: MOVE_COLORS[ds.label] || '#888', borderWidth: 1, borderRadius: 2,
+    })),
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'top', align: 'start', labels: { boxWidth: 12, padding: 10 } } },
+    scales: { x: { stacked: true, grid, ticks: { maxRotation: 45 } },
+              y: { stacked: true, grid, max: 100, ticks: { callback: pctTick } } },
+  },
+});
+
+// 2 — Key roll rates over time (lines)
+new Chart(document.getElementById('chartRollTrends'), {
+  type: 'line',
+  data: {
+    labels: ROLL.months,
+    datasets: [
+      { label: 'Cure',           data: ROLL.cure,    borderColor: '#14b8a6' },
+      { label: 'Forward-roll',   data: ROLL.forward, borderColor: '#ef8f3c' },
+      { label: 'Default',        data: ROLL.default, borderColor: '#e2483d' },
+      { label: 'Stable/Current', data: ROLL.stable,  borderColor: '#2e9e6b' },
+    ].map(ds => ({ ...ds, backgroundColor: ds.borderColor + '22',
+                   borderWidth: 2, pointRadius: 2.5, tension: 0.35, fill: false, spanGaps: true })),
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'top', align: 'start', labels: { boxWidth: 12, padding: 12 } } },
+    scales: { x: { grid, ticks: { maxRotation: 45 } }, y: { grid, min: 0, ticks: { callback: pctTick } } },
   },
 });
 

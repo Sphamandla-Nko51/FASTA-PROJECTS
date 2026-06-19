@@ -1,0 +1,227 @@
+{
+  "period": "Latest reporting month: May 2026",
+  "generated_at": "2026-06-19 12:01",
+  "latest_month": "May 2026",
+  "in_term": {
+    "cards": [
+      {
+        "key": "collection_rate",
+        "label": "Collection Rate",
+        "unit": "%",
+        "value": 33.5,
+        "target": 27.7,
+        "delta_target": 5.8,
+        "meets_target": true,
+        "mom": 1.8
+      },
+      {
+        "key": "effort_yield",
+        "label": "Effort Yield",
+        "unit": "%",
+        "value": 8.1,
+        "target": 10.7,
+        "delta_target": -2.6,
+        "meets_target": false,
+        "mom": 0.1
+      },
+      {
+        "key": "auto_collect",
+        "label": "Auto Collect %",
+        "unit": "%",
+        "value": 77.9,
+        "target": 74.1,
+        "delta_target": 3.8,
+        "meets_target": true,
+        "mom": -1.0
+      },
+      {
+        "key": "payer_rate",
+        "label": "Payer Rate",
+        "unit": "%",
+        "value": 43.8,
+        "target": 42.0,
+        "delta_target": 1.8,
+        "meets_target": true,
+        "mom": 1.4
+      }
+    ],
+    "segments": [
+      {
+        "segment": "MP0",
+        "yield_pct": {
+          "latest": 50.0287,
+          "mom": 2.5453,
+          "yoy": -5.1338
+        },
+        "collections_rm": {
+          "latest": 2.5919,
+          "mom": 0.1526,
+          "yoy": 0.2796
+        },
+        "payer_rate_pct": {
+          "latest": 50.7015,
+          "mom": 2.4626,
+          "yoy": -3.7466
+        }
+      },
+      {
+        "segment": "MP1",
+        "yield_pct": {
+          "latest": 28.8511,
+          "mom": 1.1588,
+          "yoy": -0.7722
+        },
+        "collections_rm": {
+          "latest": 2.3267,
+          "mom": 0.4383,
+          "yoy": 0.0032
+        },
+        "payer_rate_pct": {
+          "latest": 40.8395,
+          "mom": 0.0723,
+          "yoy": 0.0867
+        }
+      },
+      {
+        "segment": "MP2",
+        "yield_pct": {
+          "latest": 9.6487,
+          "mom": 1.8958,
+          "yoy": 0.9989
+        },
+        "collections_rm": {
+          "latest": 0.2417,
+          "mom": 0.0029,
+          "yoy": 0.0384
+        },
+        "payer_rate_pct": {
+          "latest": 18.4843,
+          "mom": 2.3641,
+          "yoy": 1.1023
+        }
+      },
+      {
+        "segment": "MP3+",
+        "yield_pct": {
+          "latest": 0.6969,
+          "mom": -5.0299,
+          "yoy": -7.5064
+        },
+        "collections_rm": {
+          "latest": 0.0025,
+          "mom": -0.0137,
+          "yoy": -0.0103
+        },
+        "payer_rate_pct": {
+          "latest": 6.6667,
+          "mom": -6.2365,
+          "yoy": -17.4712
+        }
+      },
+      {
+        "segment": "MPM2",
+        "yield_pct": {
+          "latest": 1926.1834,
+          "mom": 1926.1834,
+          "yoy": null
+        },
+        "collections_rm": {
+          "latest": 0.0029,
+          "mom": 0.0029,
+          "yoy": null
+        },
+        "payer_rate_pct": {
+          "latest": 100.0,
+          "mom": 100.0,
+          "yoy": null
+        }
+      },
+      {
+        "segment": "New Loan",
+        "yield_pct": {
+          "latest": 50.2633,
+          "mom": -4.7919,
+          "yoy": 10.9673
+        },
+        "collections_rm": {
+          "latest": 0.699,
+          "mom": 0.0606,
+          "yoy": 0.4657
+        },
+        "payer_rate_pct": {
+          "latest": 49.5146,
+          "mom": -5.627,
+          "yoy": 10.9671
+        }
+      }
+    ]
+  },
+  "oot": {
+    "cards": [
+      {
+        "label": "OOT Collected",
+        "unit": "Rm",
+        "value": 4.38,
+        "mom": 0.54,
+        "avg3": 4.32
+      },
+      {
+        "label": "OOT Book Yield",
+        "unit": "%",
+        "value": 1.42,
+        "mom": 0.13,
+        "avg3": 1.44
+      },
+      {
+        "label": "OOT Payers",
+        "unit": "n",
+        "value": 7221,
+        "mom": 597,
+        "avg3": null
+      },
+      {
+        "label": "OOT Accounts",
+        "unit": "n",
+        "value": 94714,
+        "mom": 2823,
+        "avg3": null
+      }
+    ]
+  },
+  "roll": {
+    "cards": [
+      {
+        "label": "Cure rate",
+        "unit": "%",
+        "value": 1.7,
+        "mom": -0.6,
+        "higher_good": true
+      },
+      {
+        "label": "Forward-roll rate",
+        "unit": "%",
+        "value": 65.8,
+        "mom": 1.0,
+        "higher_good": false
+      },
+      {
+        "label": "Default rate",
+        "unit": "%",
+        "value": 57.5,
+        "mom": 0.7,
+        "higher_good": false
+      },
+      {
+        "label": "Stable/Current",
+        "unit": "%",
+        "value": 17.7,
+        "mom": -0.4,
+        "higher_good": true
+      }
+    ],
+    "facts": {
+      "worst_band": "91DPD",
+      "default_stickiness_pct": 99.1
+    }
+  }
+}

@@ -67,6 +67,18 @@ Driven by `sql/out_of_term_collections.sql` via `tools/out_of_term_by_segment.py
    - OOT payer rate % — line + dashed 3m-avg line
    - OOT auto vs effort split % — stacked bar (Auto = DebiCheck, Effort = agent)
 
+### Tab 3 — Roll Rates (DPD migration, whole book)
+Driven by `sql/roll_rates_by_days_past_due.sql` via `tools/roll_rates_by_dpd.py::get_roll_rates_frame`.
+1. **Summary cards** (latest full month, % of all accounts, MoM Δ):
+   - **Cure rate** = returned to Current (higher = better)
+   - **Forward-roll rate** = worsened a band + stayed in 91+ DPD (higher = worse)
+   - **Default rate** = stayed in 91+ DPD (higher = worse)
+   - **Stable/Current** = held their band or stayed Current (higher = better)
+2. **Transition matrix** — 13-month pooled, rows = DPD at start, cols = DPD at end; each cell shows the row-normalised % (each start row sums to 100%) + pooled loan count, heatmap-shaded, diagonal outlined.
+3. **Charts** — DPD movement composition (stacked % by movement class) and key roll-rate trend lines, both over the 13 months.
+
+> **Movement reclassification:** the query's own `movement_type` column is unreliable — its CASE compares against mis-typed literals (`'0.Current'`, `'7.91DPD'`) that don't match the actual band labels (`'0. Current'`, `'6. 91DPD'`), so it only ever emits Stable/Rolled Forward/Rolled Backward. `roll_rates_by_dpd.classify_movement()` re-derives the intended 7-way taxonomy from the start/end bands. The fix belongs in the SQL eventually.
+
 ## Updating Targets
 Edit `assets/targets.json` (percentages, not fractions):
 ```json
@@ -91,13 +103,15 @@ Re-run `python tools/generate_dashboard.py` after editing.
 ## Architecture
 - `tools/collection_by_segment.py` — runs `sql/internal_collections.sql`; `get_segment_frame()` keeps the `A_SEGMENT` result set, aggregates across products, and derives the ratio metrics. (In-Term tab.)
 - `tools/out_of_term_by_segment.py` — runs `sql/out_of_term_collections.sql`; `get_oot_frame()` aggregates whole-book per month, derives ratios and 3-month rolling averages. (Out-of-Term tab.)
-- `tools/generate_dashboard.py` — orchestrator: queries both books → cards / chart data / table → Jinja2 render → file output.
-- `assets/dashboard_template.html` — Jinja2 HTML template with Chart.js; two tab views (`#view-interm`, `#view-oot`).
+- `tools/roll_rates_by_dpd.py` — runs `sql/roll_rates_by_days_past_due.sql`; `get_roll_rates_frame()` cleans the prefixed month strings, drops join-miss nulls, and recomputes the `movement` class via `classify_movement()`. (Roll Rates tab.)
+- `tools/generate_dashboard.py` — orchestrator: queries all three datasets → cards / chart data / table / matrix → Jinja2 render → file output.
+- `assets/dashboard_template.html` — Jinja2 HTML template with Chart.js; three tab views (`#view-interm`, `#view-oot`, `#view-roll`).
 
 ## Notes / Constraints
 - **In-term SQL schema:** `internal_collections.sql` returns a `UNION ALL` of `A_SEGMENT` (per `product × delinquency_segment × month`) and `B_TOTAL` (per `product × month`), distinguished by the `result_set` column. The dashboard consumes `A_SEGMENT` only.
 - **In-term population:** the dashboard cards/charts cover `delinquency_bucket IN ('New Loan','Current','Early Arrears','Deep Arrears')` = segments New Loan/MP0/MP1/MP2/MP3+; only Out of Term (MPM2) is excluded. This is **deliberately broader** than the SQL handover's locked KPI population (`Early Arrears` + `Deep Arrears` only) — the segment-detail table additionally shows MPM2.
 - **OOT SQL schema:** `out_of_term_collections.sql` is a single result set grained by `product × prev_mpm_band × mpm_band × month`. The OOT tab aggregates the whole book per month; the richer columns (activation lag, payer lifecycle, MPM-band cohorts, provision coverage) are **not yet surfaced**.
+- **Roll-rate SQL schema:** `roll_rates_by_days_past_due.sql` is whole-book, grouped by `snap_date`/`reporting_month_end`/`dpd_at_start_of_month`/`dpd_at_end_of_month`/`movement_type` with `loan_count`. `snap_date` is a prefixed string (e.g. `10.2025-08-31`); the month is taken from `reporting_month_end`. The matrix/cards are portfolio-wide (no product/segment/in-term split available without editing the SQL). Movement classes are recomputed in Python (see Tab 3 note).
 - **Cost analysis** (`sql/internal_collections2.sql`, Q08b) is not yet wired into the dashboard.
 
 ## Troubleshooting
