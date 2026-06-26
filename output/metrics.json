@@ -1,6 +1,6 @@
 {
   "period": "Latest reporting month: May 2026",
-  "generated_at": "2026-06-19 12:01",
+  "generated_at": "2026-06-26 10:43",
   "latest_month": "May 2026",
   "in_term": {
     "cards": [
@@ -49,9 +49,9 @@
       {
         "segment": "MP0",
         "yield_pct": {
-          "latest": 50.0287,
-          "mom": 2.5453,
-          "yoy": -5.1338
+          "latest": 50.0288,
+          "mom": 2.5454,
+          "yoy": -5.1337
         },
         "collections_rm": {
           "latest": 2.5919,
@@ -67,9 +67,9 @@
       {
         "segment": "MP1",
         "yield_pct": {
-          "latest": 28.8511,
-          "mom": 1.1588,
-          "yoy": -0.7722
+          "latest": 28.8515,
+          "mom": 1.1592,
+          "yoy": -0.7718
         },
         "collections_rm": {
           "latest": 2.3267,
@@ -103,9 +103,9 @@
       {
         "segment": "MP3+",
         "yield_pct": {
-          "latest": 0.6969,
-          "mom": -5.0299,
-          "yoy": -7.5064
+          "latest": 0.697,
+          "mom": -5.0298,
+          "yoy": -7.5063
         },
         "collections_rm": {
           "latest": 0.0025,
@@ -156,72 +156,40 @@
       }
     ]
   },
-  "oot": {
-    "cards": [
-      {
-        "label": "OOT Collected",
-        "unit": "Rm",
-        "value": 4.38,
-        "mom": 0.54,
-        "avg3": 4.32
-      },
-      {
-        "label": "OOT Book Yield",
-        "unit": "%",
-        "value": 1.42,
-        "mom": 0.13,
-        "avg3": 1.44
-      },
-      {
-        "label": "OOT Payers",
-        "unit": "n",
-        "value": 7221,
-        "mom": 597,
-        "avg3": null
-      },
-      {
-        "label": "OOT Accounts",
-        "unit": "n",
-        "value": 94714,
-        "mom": 2823,
-        "avg3": null
-      }
-    ]
-  },
   "roll": {
     "cards": [
       {
         "label": "Cure rate",
         "unit": "%",
-        "value": 1.7,
+        "value": 1.9,
         "mom": -0.6,
         "higher_good": true
       },
       {
         "label": "Forward-roll rate",
         "unit": "%",
-        "value": 65.8,
+        "value": 69.1,
         "mom": 1.0,
         "higher_good": false
       },
       {
         "label": "Default rate",
         "unit": "%",
-        "value": 57.5,
+        "value": 60.2,
         "mom": 0.7,
         "higher_good": false
       },
       {
         "label": "Stable/Current",
         "unit": "%",
-        "value": 17.7,
+        "value": 13.1,
         "mom": -0.4,
         "higher_good": true
       }
     ],
     "facts": {
       "worst_band": "91DPD",
-      "default_stickiness_pct": 99.1
+      "default_stickiness_pct": 99.0
     }
   }
 }

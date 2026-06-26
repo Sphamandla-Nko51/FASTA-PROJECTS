@@ -24,9 +24,9 @@ Outputs:
 | `output/newsletter.eml` | MIME message (HTML body + `dashboard.html` attached) — open in a mail client and send/forward |
 
 ## How insights are chosen (deterministic → then narrated)
-- **Facts & ranking are deterministic** (`build_insights`): candidate movements are drawn from in-term cards (target beat/miss + MoM), OOT cards (MoM), roll-rate cards (MoM, direction-aware), and in-term segment movers. Each is scored by magnitude (pp for %-metrics, % change otherwise), de-duplicated per metric, and split into Highlights (good) / Lowlights (bad), top ~6 each. **Numbers come only from `metrics.json` — never invented.**
+- **Facts & ranking are deterministic** (`build_insights`): candidate movements are drawn from in-term cards (target beat/miss + MoM), roll-rate cards (MoM, direction-aware), and in-term segment movers. Each is scored by magnitude (pp for %-metrics, % change otherwise), de-duplicated per metric, and split into Highlights (good) / Lowlights (bad), top ~6 each. **Numbers come only from `metrics.json` — never invented.**
 - **Claude only rewrites wording** (`narrate`): it receives the selected fact sentences and returns polished one-liners + a 2–3 sentence exec summary, with strict instructions to preserve every figure. If the key is absent or the call fails, the deterministic sentences are used verbatim.
-- The metric tables (In-Term vs target, OOT vs prior, Roll vs prior) are always rendered straight from `metrics.json`, so the figures are model-independent.
+- The metric tables (In-Term vs target, Roll vs prior) are always rendered straight from `metrics.json`, so the figures are model-independent.
 
 ## Recipients (optional)
 Edit `assets/recipients.json` to pre-fill the `.eml` `To:`/subject (used only to populate the file — still not sent):
@@ -47,7 +47,7 @@ Mail clients strip `<script>`/`<style>` and can't run Chart.js, so the newslette
 | A month has no notable moves | Highlights/Lowlights show a "nothing material" line |
 
 ## Architecture
-- `tools/generate_dashboard.py::build_metrics_bundle` — writes `output/metrics.json` (numeric in-term/OOT/roll metrics with MoM/YoY/target deltas).
+- `tools/generate_dashboard.py::build_metrics_bundle` — writes `output/metrics.json` (numeric in-term/roll metrics with MoM/YoY/target deltas).
 - `tools/generate_newsletter.py` — `build_insights` (deterministic) → `narrate` (Claude, optional) → `render` (Jinja2) → `write_eml`.
 - `assets/newsletter_template.html` — email-safe Jinja2 template.
 - `assets/recipients.json` — optional recipient/subject config (pre-fill only).

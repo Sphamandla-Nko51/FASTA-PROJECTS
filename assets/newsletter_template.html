@@ -67,13 +67,12 @@
   {% endmacro %}
 
   {{ metric_table("In-Term — latest month vs target", tbl_in_term) }}
-  {{ metric_table("Out-of-Term recoveries — vs prior month", tbl_oot) }}
   {{ metric_table("Roll rates — vs prior month", tbl_roll) }}
 
   <!-- Footer -->
   <tr><td style="padding:22px 28px 26px;">
     <div style="font-size:12px; color:#6b7a99; line-height:1.6;">
-      The full interactive dashboard (In-Term, Out-of-Term, Roll Rates) is attached as <b>dashboard.html</b> — open it in any browser.<br>
+      The full interactive dashboard (In-Term, Roll Rates) is attached as <b>dashboard.html</b> — open it in any browser.<br>
       {{ brand.company }} · generated {{ metrics.generated_at }} · figures from the live collections database.
     </div>
   </td></tr>

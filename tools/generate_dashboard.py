@@ -13,7 +13,6 @@ from jinja2 import Environment, FileSystemLoader
 
 sys.path.insert(0, str(Path(__file__).parent))
 from collection_by_segment import get_segment_frame
-from out_of_term_by_segment import get_oot_frame
 from roll_rates_by_dpd import get_roll_rates_frame
 
 load_dotenv()
@@ -284,81 +283,6 @@ def build_segment_table(frame: pd.DataFrame) -> dict:
     }
 
 
-# ── out-of-term recoveries ──────────────────────────────────────────────────
-def _fmt_rm(v) -> str:
-    return f"R{v / 1e6:.2f}m"
-
-
-def _signed_rm(v) -> str:
-    return f"{'+' if v >= 0 else '-'}R{abs(v) / 1e6:.2f}m"
-
-
-def _signed_count(v) -> str:
-    return f"{'+' if v >= 0 else '-'}{abs(v):,.0f}"
-
-
-def compute_oot_cards(frame: pd.DataFrame, targets: dict) -> list:
-    f = frame.sort_values("transaction_month").reset_index(drop=True)
-    cur = f.iloc[-1]
-    prev = f.iloc[-2] if len(f) >= 2 else None
-
-    def mom(col):
-        return (cur[col] - prev[col]) if prev is not None else None
-
-    coll_d  = mom("total_collections")
-    yield_d = mom("yield_pct")
-    pay_d   = mom("active_payers")
-    tgt     = float(targets.get("oot_book_yield", 0.0))
-
-    return [
-        {
-            "label": "OOT Collected (FTTC)",
-            "value": _fmt_rm(cur["total_collections"]),
-            "avg3":  f"3m avg {_fmt_rm(cur['collections_rm_3m'] * 1e6)}",
-            "delta": _signed_rm(coll_d) if coll_d is not None else None,
-            "delta_cls": ("pos" if coll_d >= 0 else "neg") if coll_d is not None else "neutral",
-        },
-        {
-            "label": "OOT Book Yield",
-            "value": f"{cur['yield_pct']:.2f}%",
-            "avg3":  f"3m avg {cur['yield_pct_3m']:.2f}%",
-            "target": f"{tgt:.2f}%",
-            "delta": (f"{'+' if yield_d >= 0 else ''}{yield_d:.2f}pp") if yield_d is not None else None,
-            "delta_cls": ("pos" if yield_d >= 0 else "neg") if yield_d is not None else "neutral",
-        },
-        {
-            "label": "OOT Payers",
-            "value": f"{int(cur['active_payers']):,}",
-            "delta": _signed_count(pay_d) if pay_d is not None else None,
-            "delta_cls": ("pos" if pay_d >= 0 else "neg") if pay_d is not None else "neutral",
-        },
-        {
-            "label": "OOT Accounts",
-            "value": f"{int(cur['loan_count']):,}",
-            "sub":   "active OOT book",
-        },
-    ]
-
-
-def _num_list(frame, col, scale=1.0, nd=4):
-    return [round(float(v) * scale, nd) if pd.notna(v) else None for v in frame[col]]
-
-
-def build_oot_chart_data(frame: pd.DataFrame) -> dict:
-    f = frame.sort_values("transaction_month").reset_index(drop=True)
-    return {
-        "months":          [_label(m) for m in f["transaction_month"]],
-        "collections":     _num_list(f, "collections_rm", nd=3),
-        "collections_3m":  _num_list(f, "collections_rm_3m", nd=3),
-        "yield":           _num_list(f, "yield_pct", nd=3),
-        "yield_3m":        _num_list(f, "yield_pct_3m", nd=3),
-        "payer_rate":      _num_list(f, "payer_rate_pct", nd=3),
-        "payer_rate_3m":   _num_list(f, "payer_rate_pct_3m", nd=3),
-        "auto":            _num_list(f, "auto_pct", nd=2),
-        "effort":          _num_list(f, "effort_pct", nd=2),
-    }
-
-
 # ── roll rates (DPD migration) ──────────────────────────────────────────────
 def _heat(pct):
     """Heatmap alpha for a row-% value (sub-linear so small cells stay visible)."""
@@ -497,7 +421,7 @@ def _seg_metric(frame, seg, col, scale=1.0):
     }
 
 
-def build_metrics_bundle(frame, oot_frame, roll_frame, targets, period_label, generated_at) -> dict:
+def build_metrics_bundle(frame, roll_frame, targets, period_label, generated_at) -> dict:
     months = _months(frame)
     latest, prev = months[-1], (months[-2] if len(months) >= 2 else None)
     cur_v = _in_term_values(frame, latest)
@@ -523,24 +447,6 @@ def build_metrics_bundle(frame, oot_frame, roll_frame, targets, period_label, ge
         "collections_rm": _seg_metric(frame, seg, "net_receipts", scale=1e-6),
         "payer_rate_pct": _seg_metric(frame, seg, "payer_rate_pct"),
     } for seg in seg_present]
-
-    # OOT cards (numeric)
-    of = oot_frame.sort_values("transaction_month").reset_index(drop=True)
-    ocur, oprev = of.iloc[-1], (of.iloc[-2] if len(of) >= 2 else None)
-    def omom(col):
-        return round(float(ocur[col] - oprev[col]), 4) if oprev is not None else None
-    oot_cards = [
-        {"label": "OOT Collected", "unit": "Rm", "value": round(ocur["total_collections"] / 1e6, 2),
-         "mom": round(omom("total_collections") / 1e6, 2) if omom("total_collections") is not None else None,
-         "avg3": round(float(ocur["collections_rm_3m"]), 2)},
-        {"label": "OOT Book Yield", "unit": "%", "value": round(float(ocur["yield_pct"]), 2),
-         "mom": round(float(ocur["yield_pct"] - oprev["yield_pct"]), 2) if oprev is not None else None,
-         "avg3": round(float(ocur["yield_pct_3m"]), 2)},
-        {"label": "OOT Payers", "unit": "n", "value": int(ocur["active_payers"]),
-         "mom": int(omom("active_payers")) if omom("active_payers") is not None else None, "avg3": None},
-        {"label": "OOT Accounts", "unit": "n", "value": int(ocur["loan_count"]),
-         "mom": int(omom("loan_count")) if omom("loan_count") is not None else None, "avg3": None},
-    ]
 
     # Roll-rate cards (numeric) + matrix-derived facts
     rdates, _ = _roll_months(roll_frame)
@@ -569,13 +475,12 @@ def build_metrics_bundle(frame, oot_frame, roll_frame, targets, period_label, ge
         "generated_at": generated_at,
         "latest_month": pd.Timestamp(latest).strftime("%B %Y"),
         "in_term": {"cards": it_cards, "segments": it_segments},
-        "oot": {"cards": oot_cards},
         "roll": {"cards": roll_cards, "facts": roll_facts},
     }
 
 
 # ── render ────────────────────────────────────────────────────────────────--
-def render_dashboard(brand, cards, chart_data, table, oot_cards, oot_chart_data,
+def render_dashboard(brand, cards, chart_data, table,
                      roll_cards, roll_matrix, roll_chart_data,
                      logo_b64, period_label, generated_at) -> str:
     env = Environment(loader=FileSystemLoader(str(ASSETS_DIR)), autoescape=False)
@@ -585,8 +490,6 @@ def render_dashboard(brand, cards, chart_data, table, oot_cards, oot_chart_data,
         cards=cards,
         chart_data_json=json.dumps(chart_data),
         table=table,
-        oot_cards=oot_cards,
-        oot_chart_data_json=json.dumps(oot_chart_data),
         roll_cards=roll_cards,
         roll_matrix=roll_matrix,
         roll_chart_data_json=json.dumps(roll_chart_data),
@@ -624,16 +527,6 @@ def main():
     print("Building segment table...")
     table = build_segment_table(frame)
 
-    print("Fetching out-of-term recoveries data...")
-    oot_frame = get_oot_frame(engine)
-    if oot_frame.empty:
-        print("Warning: out-of-term query returned no data")
-        sys.exit(1)
-
-    print("Computing OOT cards and charts...")
-    oot_cards = compute_oot_cards(oot_frame, targets)
-    oot_chart_data = build_oot_chart_data(oot_frame)
-
     print("Fetching roll-rate (DPD migration) data...")
     roll_frame = get_roll_rates_frame(engine)
     if roll_frame.empty:
@@ -652,8 +545,11 @@ def main():
     period_label = f"Latest reporting month: {latest.strftime('%B %Y')}"
     generated_at = pd.Timestamp.now().strftime("%Y-%m-%d %H:%M")
 
+    print("Computing metrics bundle...")
+    metrics = build_metrics_bundle(frame, roll_frame, targets, period_label, generated_at)
+
     print("Rendering dashboard...")
-    html = render_dashboard(brand, cards, chart_data, table, oot_cards, oot_chart_data,
+    html = render_dashboard(brand, cards, chart_data, table,
                             roll_cards, roll_matrix, roll_chart_data,
                             logo_b64, period_label, generated_at)
 
@@ -666,12 +562,10 @@ def main():
         "period":       period_label,
         "generated_at": generated_at,
         "in_term_cards": {c["label"]: c["value"] for c in cards},
-        "oot_cards":     {c["label"]: c["value"] for c in oot_cards},
         "roll_cards":    {c["label"]: c["value"] for c in roll_cards},
     }, indent=2), encoding="utf-8")
 
     # Numeric metrics bundle consumed by the newsletter generator.
-    metrics = build_metrics_bundle(frame, oot_frame, roll_frame, targets, period_label, generated_at)
     (OUTPUT_DIR / "metrics.json").write_text(json.dumps(metrics, indent=2), encoding="utf-8")
 
     print(f"\nDashboard written to: {dashboard_path}")

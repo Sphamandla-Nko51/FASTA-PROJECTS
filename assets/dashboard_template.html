@@ -165,7 +165,6 @@
 
   <div class="book-tabs">
     <button class="book-tab active" data-book="interm">In-Term Arrears</button>
-    <button class="book-tab" data-book="oot">Out-of-Term Recoveries</button>
     <button class="book-tab" data-book="roll">Roll Rates</button>
   </div>
 
@@ -247,52 +246,6 @@
   </div>
 
   </div><!-- /view-interm -->
-
-  <div id="view-oot" class="book-view">
-
-  <!-- OOT summary cards -->
-  <p class="section-title">Out-of-term recoveries &middot; latest full month</p>
-  <div class="kpi-grid">
-    {% for c in oot_cards %}
-    <div class="kpi-card">
-      <span class="kpi-label">{{ c.label }}</span>
-      <span class="kpi-value">{{ c.value }}</span>
-      {% if c.avg3 or c.target or c.delta %}
-      <div class="kpi-foot">
-        {% if c.avg3 %}<span class="kpi-sub">{{ c.avg3 }}</span>{% endif %}
-        {% if c.target %}<span class="chip">tgt {{ c.target }}</span>{% endif %}
-        {% if c.delta %}<span class="badge {{ c.delta_cls }}">{{ c.delta }}</span>{% endif %}
-      </div>
-      {% endif %}
-      {% if c.sub %}<span class="kpi-sub">{{ c.sub }}</span>{% endif %}
-    </div>
-    {% endfor %}
-  </div>
-
-  <!-- OOT charts -->
-  <p class="section-title">Recovery trends &middot; vs 3-month average</p>
-  <div class="chart-grid">
-    <div class="chart-card">
-      <h2>OOT collections (Rm, FTTC) — vs 3m avg</h2>
-      <div class="chart-wrap"><canvas id="chartOotCollections"></canvas></div>
-    </div>
-    <div class="chart-card">
-      <h2>OOT book yield % vs 3m avg</h2>
-      <div class="chart-wrap"><canvas id="chartOotYield"></canvas></div>
-    </div>
-  </div>
-  <div class="chart-grid">
-    <div class="chart-card">
-      <h2>OOT payer rate % vs 3m avg</h2>
-      <div class="chart-wrap"><canvas id="chartOotPayerRate"></canvas></div>
-    </div>
-    <div class="chart-card">
-      <h2>OOT auto vs effort split %</h2>
-      <div class="chart-wrap"><canvas id="chartOotAutoEffort"></canvas></div>
-    </div>
-  </div>
-
-  </div><!-- /view-oot -->
 
   <div id="view-roll" class="book-view">
 
@@ -439,78 +392,6 @@ new Chart(document.getElementById('chartArrearsMove'), {
     responsive: true, maintainAspectRatio: false,
     plugins: { legend: { position: 'top', align: 'start', labels: { boxWidth: 12, padding: 12 } } },
     scales: { x: { grid, ticks: { maxRotation: 45 } }, y: { grid, ticks: { callback: v => 'R' + v.toFixed(1) + 'm' } } },
-  },
-});
-
-// ════════════════════════════════════════════════════════════════
-// Out-of-Term Recoveries
-// ════════════════════════════════════════════════════════════════
-const OOT  = {{ oot_chart_data_json }};
-const GOLD = '#c9a24b';
-const AVG3 = '#9aa7bd';
-
-const avgLineDataset = (data, label) => ({
-  label, data, type: 'line',
-  borderColor: AVG3, backgroundColor: 'transparent',
-  borderWidth: 2, borderDash: [6, 4], pointRadius: 0, tension: 0.35, spanGaps: true, order: 0,
-});
-
-const goldLine = (canvasId, data, label, yOpts) =>
-  new Chart(document.getElementById(canvasId), {
-    type: 'line',
-    data: { labels: OOT.months, datasets: [
-      { label, data, borderColor: GOLD, backgroundColor: GOLD + '22',
-        borderWidth: 2.5, pointRadius: 3, tension: 0.35, fill: false, spanGaps: true, order: 1 },
-    ] },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { position: 'top', align: 'start', labels: { boxWidth: 12, padding: 12 } } },
-      scales: { x: { grid, ticks: { maxRotation: 45 } }, y: Object.assign({ grid }, yOpts) },
-    },
-  });
-
-// 1 — OOT collections (Rm) bars + 3m avg dashed line
-new Chart(document.getElementById('chartOotCollections'), {
-  type: 'bar',
-  data: {
-    labels: OOT.months,
-    datasets: [
-      { type: 'bar', label: 'Collections', data: OOT.collections,
-        backgroundColor: GOLD + 'cc', borderColor: GOLD, borderWidth: 1, borderRadius: 2, order: 1 },
-      avgLineDataset(OOT.collections_3m, '3m avg'),
-    ],
-  },
-  options: {
-    responsive: true, maintainAspectRatio: false,
-    plugins: { legend: { position: 'top', align: 'start', labels: { boxWidth: 12, padding: 12 } } },
-    scales: { x: { grid, ticks: { maxRotation: 45 } }, y: { grid, min: 0, ticks: { callback: v => 'R' + v.toFixed(1) + 'm' } } },
-  },
-});
-
-// 2 — OOT book yield % + 3m avg
-const cYield = goldLine('chartOotYield', OOT.yield, 'Yield', { ticks: { callback: pctTick } });
-cYield.data.datasets.push(avgLineDataset(OOT.yield_3m, '3m avg'));
-cYield.update();
-
-// 3 — OOT payer rate % + 3m avg
-const cPayer = goldLine('chartOotPayerRate', OOT.payer_rate, 'Payer rate', { min: 0, ticks: { callback: pctTick } });
-cPayer.data.datasets.push(avgLineDataset(OOT.payer_rate_3m, '3m avg'));
-cPayer.update();
-
-// 4 — OOT auto vs effort split (stacked bar)
-new Chart(document.getElementById('chartOotAutoEffort'), {
-  type: 'bar',
-  data: {
-    labels: OOT.months,
-    datasets: [
-      { label: 'Auto',   data: OOT.auto,   backgroundColor: ACCENT + 'dd', borderColor: ACCENT, borderWidth: 1, borderRadius: 2 },
-      { label: 'Effort', data: OOT.effort, backgroundColor: PRIMARY + 'dd', borderColor: PRIMARY, borderWidth: 1, borderRadius: 2 },
-    ],
-  },
-  options: {
-    responsive: true, maintainAspectRatio: false,
-    plugins: { legend: { position: 'top', align: 'start', labels: { boxWidth: 12, padding: 12 } } },
-    scales: { x: { stacked: true, grid, ticks: { maxRotation: 45 } }, y: { stacked: true, grid, ticks: { callback: pctTick } } },
   },
 });
 
