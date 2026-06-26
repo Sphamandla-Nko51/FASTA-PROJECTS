@@ -77,6 +77,7 @@ output/         # Generated deliverables (gitignored)
   newsletter.eml  # MIME newsletter (HTML body + dashboard.html attached)
 sql/            # Raw SQL query files — edit here to change what data is pulled
   internal_collections.sql  # 12-month Internal Collections data with delinquency segmentation
+  collections_queue_penetration.sql  # 13-month PTP penetration/fulfillment/recovery per queue (start dept x end dept)
 .tmp/           # Temporary files (scraped data, intermediate exports) — disposable
 tools/          # Python scripts for deterministic execution
 workflows/      # Markdown SOPs defining what to do and how
@@ -112,16 +113,27 @@ Importable module:
 python tools/roll_rates_by_dpd.py --output .tmp/roll_rates.csv
 ```
 
+### `tools/queue_penetration.py`
+Importable module over `sql/collections_queue_penetration.sql` (PTP penetration & fulfillment):
+- `get_queue_penetration_data(engine)` — raw rows, one per `(reporting_month, start dept, end dept)`.
+- `get_queue_penetration_frame(engine)` — aggregates **across the end-of-month department** (sums the additive count/volume columns) so each row is a queue's whole start-of-month population, and re-derives the rate metrics: `penetration_rate_pct`, `penetration_rate_adj_pct` (PTP ≥ 80% of instalment), `ptp_fulfillment_rate_pct` (kept rate), `recovery_rate_pct` (recovered / exposure). Never average the pre-computed `*_pct` columns — re-derive from the count sums (the SQL exposes `number_of_ptp_dos`/`number_of_kept_dos` + adj for exactly this).
+- `get_primary_queue_frame(engine)` — the headline `Internal Collections - in term` queue's monthly time series (one row per month) used by the dashboard tab.
+
+```bash
+python tools/queue_penetration.py --output .tmp/queue_penetration.csv
+```
+
 ### `tools/generate_dashboard.py`
-Main entry point for the collections dashboard. Orchestrates: query → cards → chart data → (in-term) segment table → Jinja2 render → file output, for **two tabs**. **No CLI arguments** — the SQL self-manages the reporting window.
+Main entry point for the collections dashboard. Orchestrates: query → cards → chart data → (in-term) segment table → Jinja2 render → file output, for **three tabs**. **No CLI arguments** — the SQL self-manages the reporting window.
 
 ```bash
 python tools/generate_dashboard.py
 ```
 
-Outputs `output/dashboard.html` (open in any browser), `output/report.json`, and `output/metrics.json` (numeric metrics bundle for the newsletter, via `build_metrics_bundle`). The dashboard has two tabs:
+Outputs `output/dashboard.html` (open in any browser), `output/report.json`, and `output/metrics.json` (numeric metrics bundle for the newsletter, via `build_metrics_bundle`). The dashboard has three tabs:
 - **In-Term Arrears** — 4 cards (Collection Rate, Effort Yield, Auto Collect %, Payer Rate, each with target chip + delta badge) and 4 charts scoped to the arrears population (MP1/MP2/MP3+), plus a segment-detail table covering **all** buckets/segments in the data (Current/MP0, Early Arrears, Deep Arrears, New Loan, Out of Term/MPM2 — built dynamically) with 7 months + MoM Δ + 3M Avg + YoY.
 - **Roll Rates** (whole book, DPD migration) — 4 cards (Cure, Forward-roll, Default, Stable/Current), a 13-month pooled DPD transition matrix (row % + counts, heatmap), and 2 charts (movement composition, roll-rate trends). Movement classes are recomputed in Python because the query's `movement_type` is unreliable.
+- **Queue Penetration** (PTP coverage, in-term queue) — 4 cards (Penetration rate, Full-value penetration, PTP fulfillment, Recovery rate, each with MoM badge), 4 charts (raw vs full-value penetration %, fulfillment vs recovery %, queue exposure vs recovered Rm, loans in queue), and a 7-month monthly-detail table (+ MoM Δ / 3M Avg / YoY). Scoped to the `Internal Collections - in term` start-of-month queue.
 
 See `workflows/dashboard_generation.md` for details.
 

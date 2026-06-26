@@ -14,6 +14,7 @@ from jinja2 import Environment, FileSystemLoader
 sys.path.insert(0, str(Path(__file__).parent))
 from collection_by_segment import get_segment_frame
 from roll_rates_by_dpd import get_roll_rates_frame
+from queue_penetration import get_primary_queue_frame, PRIMARY_QUEUE
 
 load_dotenv()
 
@@ -389,6 +390,128 @@ def build_roll_rate_charts(frame: pd.DataFrame) -> dict:
     }
 
 
+# ── queue penetration (PTP coverage & fulfillment) ──────────────────────────
+# Headline KPIs for the penetration tab, over the primary in-term queue's
+# monthly series. (label, column, higher-is-better) — all higher-is-better.
+_PEN_KPIS = [
+    ("Penetration rate",       "penetration_rate_pct",     True),
+    ("Full-value penetration", "penetration_rate_adj_pct", True),
+    ("PTP fulfillment",        "ptp_fulfillment_rate_pct", True),
+    ("Recovery rate",          "recovery_rate_pct",        True),
+]
+
+
+def _pen_months(frame: pd.DataFrame) -> list:
+    return sorted(frame["reporting_month"].unique())
+
+
+def compute_penetration_cards(frame: pd.DataFrame) -> list:
+    months = _pen_months(frame)
+    latest = months[-1]
+    prev = months[-2] if len(months) >= 2 else None
+    cur = frame[frame["reporting_month"] == latest]
+    prv = frame[frame["reporting_month"] == prev] if prev is not None else None
+    sub = f"In-term queue · {pd.Timestamp(latest).strftime('%b %Y')}"
+
+    def val(df, col):
+        return float(df[col].iloc[0]) if df is not None and not df.empty and pd.notna(df[col].iloc[0]) else None
+
+    cards = []
+    for label, col, higher_good in _PEN_KPIS:
+        v = val(cur, col)
+        pv = val(prv, col)
+        d = (v - pv) if v is not None and pv is not None else None
+        if d is None:
+            cls = "neutral"
+        else:
+            good = d >= 0 if higher_good else d <= 0
+            cls = "neutral" if abs(d) < 0.05 else ("pos" if good else "neg")
+        cards.append({
+            "label": label,
+            "value": f"{v:.1f}%" if v is not None else "—",
+            "delta": (f"{'+' if d >= 0 else ''}{d:.1f}pp") if d is not None else None,
+            "delta_cls": cls,
+            "sub": sub,
+        })
+    return cards
+
+
+def _pen_series(frame, col, months, scale=1.0):
+    s = frame.set_index("reporting_month")[col]
+    out = []
+    for m in months:
+        if m in s.index and pd.notna(s.loc[m]):
+            out.append(round(float(s.loc[m]) * scale, 4))
+        else:
+            out.append(None)
+    return out
+
+
+def build_penetration_charts(frame: pd.DataFrame) -> dict:
+    months = _pen_months(frame)
+    return {
+        "months":      [_label(m) for m in months],
+        # 1 — penetration % over time (raw vs full-value)
+        "pen_raw":     _pen_series(frame, "penetration_rate_pct", months),
+        "pen_adj":     _pen_series(frame, "penetration_rate_adj_pct", months),
+        # 2 — fulfillment (kept rate) vs recovery rate over time
+        "fulfillment": _pen_series(frame, "ptp_fulfillment_rate_pct", months),
+        "recovery":    _pen_series(frame, "recovery_rate_pct", months),
+        # 3 — queue exposure vs recovered volume (Rm)
+        "exposure_rm":  _pen_series(frame, "total_queue_exposure", months, scale=1e-6),
+        "recovered_rm": _pen_series(frame, "total_recovered_volume", months, scale=1e-6),
+        # 4 — queue size (loans in queue)
+        "loans":        _pen_series(frame, "number_of_loans", months),
+    }
+
+
+def _pen_metric_row(frame, label, col, unit, months, scale=1.0):
+    s = frame.set_index("reporting_month")[col]
+
+    def val(m):
+        return float(s.loc[m]) * scale if m in s.index and pd.notna(s.loc[m]) else None
+
+    display = months[-7:]
+    latest, prev = months[-1], months[-2] if len(months) >= 2 else None
+    yoy_month = months[-13] if len(months) >= 13 else None
+    last3 = [val(m) for m in months[-3:] if val(m) is not None]
+
+    lv = val(latest)
+    pv = val(prev) if prev is not None else None
+    yv = val(yoy_month) if yoy_month is not None else None
+    mom = (lv - pv) if lv is not None and pv is not None else None
+    yoy = (lv - yv) if lv is not None and yv is not None else None
+    avg3 = sum(last3) / len(last3) if last3 else None
+
+    return {
+        "label":   label,
+        "cells":   [_fmt_val(val(m), unit) for m in display],
+        "mom":     _fmt_delta(mom, unit),
+        "mom_cls": _cls(mom),
+        "avg3":    _fmt_val(avg3, unit),
+        "yoy":     _fmt_delta(yoy, unit),
+        "yoy_cls": _cls(yoy),
+    }
+
+
+def build_penetration_table(frame: pd.DataFrame) -> dict:
+    months = _pen_months(frame)
+    metric_specs = [
+        ("Loans in queue",         "number_of_loans",          "count", 1.0),
+        ("Queue exposure (Rm)",    "total_queue_exposure",     "rm",    1e-6),
+        ("Recovered (Rm)",         "total_recovered_volume",   "rm",    1e-6),
+        ("Penetration %",          "penetration_rate_pct",     "pct",   1.0),
+        ("Full-value penetration %", "penetration_rate_adj_pct", "pct", 1.0),
+        ("PTP fulfillment %",      "ptp_fulfillment_rate_pct", "pct",   1.0),
+        ("Recovery rate %",        "recovery_rate_pct",        "pct",   1.0),
+    ]
+    return {
+        "month_headers": [_label(m) for m in months[-7:]],
+        "metrics": [_pen_metric_row(frame, lbl, col, unit, months, scale)
+                    for lbl, col, unit, scale in metric_specs],
+    }
+
+
 # ── numeric metrics bundle (for the newsletter) ─────────────────────────────
 def _in_term_values(frame, month):
     sub = frame[(frame["delinquency_bucket"].isin(IN_TERM_BUCKETS)) &
@@ -482,6 +605,7 @@ def build_metrics_bundle(frame, roll_frame, targets, period_label, generated_at)
 # ── render ────────────────────────────────────────────────────────────────--
 def render_dashboard(brand, cards, chart_data, table,
                      roll_cards, roll_matrix, roll_chart_data,
+                     pen_cards, pen_chart_data, pen_table,
                      logo_b64, period_label, generated_at) -> str:
     env = Environment(loader=FileSystemLoader(str(ASSETS_DIR)), autoescape=False)
     template = env.get_template("dashboard_template.html")
@@ -493,6 +617,9 @@ def render_dashboard(brand, cards, chart_data, table,
         roll_cards=roll_cards,
         roll_matrix=roll_matrix,
         roll_chart_data_json=json.dumps(roll_chart_data),
+        pen_cards=pen_cards,
+        pen_chart_data_json=json.dumps(pen_chart_data),
+        pen_table=pen_table,
         logo_b64=logo_b64 or "",
         period_label=period_label,
         generated_at=generated_at,
@@ -538,6 +665,17 @@ def main():
     roll_matrix = build_roll_rate_matrix(roll_frame)
     roll_chart_data = build_roll_rate_charts(roll_frame)
 
+    print("Fetching queue penetration data...")
+    pen_frame = get_primary_queue_frame(engine)
+    if pen_frame.empty:
+        print(f"Warning: penetration query returned no rows for '{PRIMARY_QUEUE}'")
+        sys.exit(1)
+
+    print("Computing penetration cards, charts and table...")
+    pen_cards = compute_penetration_cards(pen_frame)
+    pen_chart_data = build_penetration_charts(pen_frame)
+    pen_table = build_penetration_table(pen_frame)
+
     brand    = normalize_brand_colors(load_brand())
     logo_b64 = encode_logo(brand.get("logo", "")) if brand.get("logo") else None
 
@@ -551,6 +689,7 @@ def main():
     print("Rendering dashboard...")
     html = render_dashboard(brand, cards, chart_data, table,
                             roll_cards, roll_matrix, roll_chart_data,
+                            pen_cards, pen_chart_data, pen_table,
                             logo_b64, period_label, generated_at)
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -563,6 +702,7 @@ def main():
         "generated_at": generated_at,
         "in_term_cards": {c["label"]: c["value"] for c in cards},
         "roll_cards":    {c["label"]: c["value"] for c in roll_cards},
+        "penetration_cards": {c["label"]: c["value"] for c in pen_cards},
     }, indent=2), encoding="utf-8")
 
     # Numeric metrics bundle consumed by the newsletter generator.

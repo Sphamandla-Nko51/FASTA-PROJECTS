@@ -166,6 +166,7 @@
   <div class="book-tabs">
     <button class="book-tab active" data-book="interm">In-Term Arrears</button>
     <button class="book-tab" data-book="roll">Roll Rates</button>
+    <button class="book-tab" data-book="pen">Queue Penetration</button>
   </div>
 
   <div id="view-interm" class="book-view active">
@@ -307,6 +308,77 @@
 
   </div><!-- /view-roll -->
 
+  <div id="view-pen" class="book-view">
+
+  <!-- Penetration summary cards -->
+  <p class="section-title">PTP coverage &middot; latest full month (in-term queue)</p>
+  <div class="kpi-grid">
+    {% for c in pen_cards %}
+    <div class="kpi-card">
+      <span class="kpi-label">{{ c.label }}</span>
+      <span class="kpi-value">{{ c.value }}</span>
+      {% if c.delta %}
+      <div class="kpi-foot"><span class="badge {{ c.delta_cls }}">{{ c.delta }}</span></div>
+      {% endif %}
+      {% if c.sub %}<span class="kpi-sub">{{ c.sub }}</span>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Penetration charts -->
+  <p class="section-title">Coverage &amp; fulfillment trends</p>
+  <div class="chart-grid">
+    <div class="chart-card">
+      <h2>Queue penetration % — raw vs full-value PTP</h2>
+      <div class="chart-wrap"><canvas id="chartPenRate"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h2>PTP fulfillment vs recovery rate (%)</h2>
+      <div class="chart-wrap"><canvas id="chartPenFulfil"></canvas></div>
+    </div>
+  </div>
+  <div class="chart-grid">
+    <div class="chart-card">
+      <h2>Queue exposure vs recovered volume (Rm)</h2>
+      <div class="chart-wrap"><canvas id="chartPenVolume"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h2>Loans in queue</h2>
+      <div class="chart-wrap"><canvas id="chartPenLoans"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Penetration detail table -->
+  <p class="section-title">Monthly detail (in-term queue)</p>
+  <div class="table-card">
+    <table class="seg-table">
+      <thead>
+        <tr>
+          <th class="lt">Metric</th>
+          {% for m in pen_table.month_headers %}<th>{{ m }}</th>{% endfor %}
+          <th>MoM Δ</th>
+          <th>3M Avg</th>
+          <th>YoY</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for metric in pen_table.metrics %}
+        <tr>
+          <td class="lt metric-name">{{ metric.label }}</td>
+          {% for i in range(metric.cells|length) %}
+          <td class="{{ 'latest' if loop.last else '' }}">{{ metric.cells[i] }}</td>
+          {% endfor %}
+          <td class="delta {{ metric.mom_cls }}">{{ metric.mom }}</td>
+          <td>{{ metric.avg3 }}</td>
+          <td class="delta {{ metric.yoy_cls }}">{{ metric.yoy }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  </div><!-- /view-pen -->
+
 </main>
 
 <footer>
@@ -443,6 +515,72 @@ new Chart(document.getElementById('chartRollTrends'), {
     responsive: true, maintainAspectRatio: false,
     plugins: { legend: { position: 'top', align: 'start', labels: { boxWidth: 12, padding: 12 } } },
     scales: { x: { grid, ticks: { maxRotation: 45 } }, y: { grid, min: 0, ticks: { callback: pctTick } } },
+  },
+});
+
+// ════════════════════════════════════════════════════════════════
+// Queue Penetration (PTP coverage & fulfillment)
+// ════════════════════════════════════════════════════════════════
+const PEN = {{ pen_chart_data_json }};
+
+function penLine(canvasId, datasets, yOpts) {
+  new Chart(document.getElementById(canvasId), {
+    type: 'line',
+    data: {
+      labels: PEN.months,
+      datasets: datasets.map(ds => ({
+        ...ds, backgroundColor: ds.borderColor + '22',
+        borderWidth: 2, pointRadius: 2.5, tension: 0.35, fill: false, spanGaps: true,
+      })),
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'top', align: 'start', labels: { boxWidth: 12, padding: 12 } } },
+      scales: { x: { grid, ticks: { maxRotation: 45 } }, y: Object.assign({ grid }, yOpts) },
+    },
+  });
+}
+
+// 1 — Penetration % (raw vs full-value)
+penLine('chartPenRate', [
+  { label: 'Penetration (any PTP)',  data: PEN.pen_raw, borderColor: ACCENT },
+  { label: 'Full-value PTP (≥80%)',  data: PEN.pen_adj, borderColor: PRIMARY },
+], { min: 0, ticks: { callback: pctTick } });
+
+// 2 — Fulfillment vs recovery rate
+penLine('chartPenFulfil', [
+  { label: 'PTP fulfillment (kept)', data: PEN.fulfillment, borderColor: '#2e9e6b' },
+  { label: 'Recovery rate',          data: PEN.recovery,    borderColor: '#e2483d' },
+], { min: 0, ticks: { callback: pctTick } });
+
+// 3 — Queue exposure vs recovered volume (Rm)
+new Chart(document.getElementById('chartPenVolume'), {
+  type: 'bar',
+  data: {
+    labels: PEN.months,
+    datasets: [
+      { label: 'Queue exposure', data: PEN.exposure_rm, backgroundColor: ACCENT + 'aa', borderColor: ACCENT, borderWidth: 1, borderRadius: 2 },
+      { label: 'Recovered',      data: PEN.recovered_rm, backgroundColor: '#2e9e6b' + 'dd', borderColor: '#2e9e6b', borderWidth: 1, borderRadius: 2 },
+    ],
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'top', align: 'start', labels: { boxWidth: 12, padding: 12 } } },
+    scales: { x: { grid, ticks: { maxRotation: 45 } }, y: { grid, min: 0, ticks: { callback: v => 'R' + v.toFixed(1) + 'm' } } },
+  },
+});
+
+// 4 — Loans in queue
+new Chart(document.getElementById('chartPenLoans'), {
+  type: 'bar',
+  data: {
+    labels: PEN.months,
+    datasets: [{ label: 'Loans in queue', data: PEN.loans, backgroundColor: PRIMARY + 'cc', borderColor: PRIMARY, borderWidth: 1, borderRadius: 2 }],
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'top', align: 'start', labels: { boxWidth: 12, padding: 12 } } },
+    scales: { x: { grid, ticks: { maxRotation: 45 } }, y: { grid, min: 0, ticks: { callback: v => v.toLocaleString() } } },
   },
 });
 

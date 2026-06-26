@@ -38,7 +38,7 @@ xdg-open output/dashboard.html # Linux
 
 ## Dashboard Sections
 
-The dashboard has **two tabs** (switcher at the top of the page): In-Term and Roll Rates.
+The dashboard has **three tabs** (switcher at the top of the page): In-Term, Roll Rates, and Queue Penetration.
 
 ### Tab 1 — In-Term (cards + charts cover the in-term book: New Loan + MP0 + MP1 + MP2 + MP3+; only Out of Term/MPM2 excluded)
 1. **Summary cards** (latest full month):
@@ -66,6 +66,18 @@ Driven by `sql/roll_rates_by_days_past_due.sql` via `tools/roll_rates_by_dpd.py:
 
 > **Movement reclassification:** the query's own `movement_type` column is unreliable — its CASE compares against mis-typed literals (`'0.Current'`, `'7.91DPD'`) that don't match the actual band labels (`'0. Current'`, `'6. 91DPD'`), so it only ever emits Stable/Rolled Forward/Rolled Backward. `roll_rates_by_dpd.classify_movement()` re-derives the intended 7-way taxonomy from the start/end bands. The fix belongs in the SQL eventually.
 
+### Tab 3 — Queue Penetration (PTP coverage & fulfillment, in-term queue)
+Driven by `sql/collections_queue_penetration.sql` via `tools/queue_penetration.py::get_primary_queue_frame`. Measures how much of the collections queue gets a Promise-to-Pay (PTP) arrangement, how many of those arrangements are kept, and how much money is recovered. Scoped to the `Internal Collections - in term` **start-of-month** queue (the headline queue); the raw query also covers other start queues (e.g. `Current`).
+1. **Summary cards** (latest full month, MoM Δ; all higher = better):
+   - **Penetration rate** = loans with any PTP / loans in queue
+   - **Full-value penetration** = loans with a PTP ≥ 80% of the instalment / loans in queue (the meaningful coverage signal — raw penetration runs near-saturated)
+   - **PTP fulfillment** = kept arrangements / arrangements made (kept rate)
+   - **Recovery rate** = recovered volume / queue exposure
+2. **Charts** (monthly series across the window): raw vs full-value penetration % (line); PTP fulfillment vs recovery % (line); queue exposure vs recovered volume (Rm, grouped bar); loans in queue (bar).
+3. **Monthly-detail table** — 7 metric rows (loans in queue, queue exposure Rm, recovered Rm, penetration %, full-value penetration %, PTP fulfillment %, recovery %) × last 7 months + MoM Δ / 3M Avg / YoY.
+
+> **Aggregation:** raw rows are split by `(reporting_month, start dept, end dept)`. `get_queue_penetration_frame()` sums the additive counts/volumes across the **end** department so penetration is measured at the start-of-month queue level, then re-derives the rates. The SQL exposes `number_of_ptp_dos`/`number_of_kept_dos` (+ adj) for exactly this — never average the pre-computed `*_pct` columns.
+
 ## Updating Targets
 Edit `assets/targets.json` (percentages, not fractions):
 ```json
@@ -91,8 +103,9 @@ Re-run `python tools/generate_dashboard.py` after editing.
 - `tools/collection_by_segment.py` — runs `sql/internal_collections.sql`; `get_segment_frame()` keeps the `A_SEGMENT` result set, aggregates across products, and derives the ratio metrics. (In-Term tab.)
 - `tools/roll_rates_by_dpd.py` — runs `sql/roll_rates_by_days_past_due.sql`; `get_roll_rates_frame()` cleans the prefixed month strings, drops join-miss nulls, and recomputes the `movement` class via `classify_movement()`. (Roll Rates tab.)
 - `tools/insights.py` — deterministic insight engine used by the **newsletter**: `candidate_facts(metrics)` selects/scores/phrases notable movements and `split()` produces the global highlights/lowlights. Pure function of `metrics.json` — figures are never invented.
-- `tools/generate_dashboard.py` — orchestrator: queries both datasets → cards / chart data / table / matrix → Jinja2 render → file output.
-- `assets/dashboard_template.html` — Jinja2 HTML template with Chart.js; two tab views (`#view-interm`, `#view-roll`).
+- `tools/queue_penetration.py` — runs `sql/collections_queue_penetration.sql`; `get_queue_penetration_frame()` aggregates across the end department and re-derives penetration/fulfillment/recovery rates; `get_primary_queue_frame()` returns the in-term queue's monthly series. (Queue Penetration tab.)
+- `tools/generate_dashboard.py` — orchestrator: queries all three datasets → cards / chart data / table / matrix → Jinja2 render → file output.
+- `assets/dashboard_template.html` — Jinja2 HTML template with Chart.js; three tab views (`#view-interm`, `#view-roll`, `#view-pen`).
 
 ## Notes / Constraints
 - **In-term SQL schema:** `internal_collections.sql` returns a `UNION ALL` of `A_SEGMENT` (per `product × delinquency_segment × month`) and `B_TOTAL` (per `product × month`), distinguished by the `result_set` column. The dashboard consumes `A_SEGMENT` only.

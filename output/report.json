@@ -1,6 +1,6 @@
 {
   "period": "Latest reporting month: May 2026",
-  "generated_at": "2026-06-26 10:43",
+  "generated_at": "2026-06-26 12:22",
   "in_term_cards": {
     "Collection Rate": "33.5%",
     "Effort Yield": "8.1%",
@@ -12,5 +12,11 @@
     "Forward-roll rate": "69.1%",
     "Default rate": "60.2%",
     "Stable/Current": "13.1%"
+  },
+  "penetration_cards": {
+    "Penetration rate": "55.3%",
+    "Full-value penetration": "83.5%",
+    "PTP fulfillment": "29.7%",
+    "Recovery rate": "37.6%"
   }
 }

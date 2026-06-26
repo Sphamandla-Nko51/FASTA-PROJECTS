@@ -77,10 +77,6 @@ active_base as (
         max(mdsom.instalment_due_in_month) over (partition by mdsom.loannumber) as original_instalment_amount
 from fasta_views.mv_department_start_of_month mdsom
 where
-
---     and  mdsom.reporting_month::date between
---         (select reporting_month from params) - interval '13 months'
---     and (select reporting_month from params)
  (mdsom.department_start_of_month in ('Internal Collections - in term') or
                               mdsom.touched_it_in_month)
 -- and  mdsom.loannumber = '0005669373'
@@ -113,7 +109,7 @@ group by 1, 2, 3, 4, 5, 6, 7
 final_summary as (
 select
         loannumber, reporting_month, months_in_it, department_start_of_month, department_end_of_month,
-        original_instalment_amount, amount_recovered, number_of_kept_dos, number_of_ptp_dos,, number_of_kept_dos_adj, number_of_ptp_dos_adj,
+        original_instalment_amount, amount_recovered, number_of_kept_dos, number_of_ptp_dos, number_of_kept_dos_adj, number_of_ptp_dos_adj,
         case when number_of_ptp_dos > 0 and number_of_ptp_dos >= months_in_it then 1 else 0 end as has_ptp_dos_in_month,
         case when number_of_ptp_dos_adj > 0 then 1 else 0 end as has_ptp_dos_in_month_adj
     from master
@@ -133,6 +129,12 @@ select
     sum(has_ptp_dos_in_month) as number_of_loans_with_ptp_dos,
     sum(has_ptp_dos_in_month_adj) as number_of_loans_with_ptp_dos_adj,
 
+    -- arrangement counts (exposed so rates can be re-aggregated across end-departments)
+    sum(number_of_ptp_dos) as number_of_ptp_dos,
+    sum(number_of_kept_dos) as number_of_kept_dos,
+    sum(number_of_ptp_dos_adj) as number_of_ptp_dos_adj,
+    sum(number_of_kept_dos_adj) as number_of_kept_dos_adj,
+
     -- penetration percentages (conversion tracking)
     round((sum(has_ptp_dos_in_month)::numeric / nullif(count(*), 0)) * 100, 2) as penetration_rate_pct,
     round((sum(has_ptp_dos_in_month_adj)::numeric / nullif(count(*), 0)) * 100, 2) as penetration_rate_adj_pct,
@@ -141,6 +143,9 @@ select
     round((sum(number_of_kept_dos)::numeric / nullif(sum(number_of_ptp_dos), 0)) * 100, 2) as ptp_fulfillment_rate_pct,
     round((sum(number_of_kept_dos_adj)::numeric / nullif(sum(number_of_ptp_dos_adj), 0)) * 100, 2) as ptp_fulfillment_rate_adj_pct
 from final_summary
+where reporting_month::date between
+        (select reporting_month from params) - interval '13 months'
+    and (select reporting_month from params)
 group by 1, 2, 3
 order by 1 desc, 4 desc;
 

@@ -157,7 +157,7 @@
   </div>
   <div class="header-meta">
     <div>Latest reporting month: May 2026</div>
-    <div>Generated: 2026-06-26 10:43</div>
+    <div>Generated: 2026-06-26 12:22</div>
   </div>
 </header>
 
@@ -166,6 +166,7 @@
   <div class="book-tabs">
     <button class="book-tab active" data-book="interm">In-Term Arrears</button>
     <button class="book-tab" data-book="roll">Roll Rates</button>
+    <button class="book-tab" data-book="pen">Queue Penetration</button>
   </div>
 
   <div id="view-interm" class="book-view active">
@@ -1426,13 +1427,255 @@
 
   </div><!-- /view-roll -->
 
+  <div id="view-pen" class="book-view">
+
+  <!-- Penetration summary cards -->
+  <p class="section-title">PTP coverage &middot; latest full month (in-term queue)</p>
+  <div class="kpi-grid">
+    
+    <div class="kpi-card">
+      <span class="kpi-label">Penetration rate</span>
+      <span class="kpi-value">55.3%</span>
+      
+      <div class="kpi-foot"><span class="badge neg">-3.1pp</span></div>
+      
+      <span class="kpi-sub">In-term queue · May 2026</span>
+    </div>
+    
+    <div class="kpi-card">
+      <span class="kpi-label">Full-value penetration</span>
+      <span class="kpi-value">83.5%</span>
+      
+      <div class="kpi-foot"><span class="badge neg">-2.1pp</span></div>
+      
+      <span class="kpi-sub">In-term queue · May 2026</span>
+    </div>
+    
+    <div class="kpi-card">
+      <span class="kpi-label">PTP fulfillment</span>
+      <span class="kpi-value">29.7%</span>
+      
+      <div class="kpi-foot"><span class="badge neg">-3.1pp</span></div>
+      
+      <span class="kpi-sub">In-term queue · May 2026</span>
+    </div>
+    
+    <div class="kpi-card">
+      <span class="kpi-label">Recovery rate</span>
+      <span class="kpi-value">37.6%</span>
+      
+      <div class="kpi-foot"><span class="badge neg">-2.2pp</span></div>
+      
+      <span class="kpi-sub">In-term queue · May 2026</span>
+    </div>
+    
+  </div>
+
+  <!-- Penetration charts -->
+  <p class="section-title">Coverage &amp; fulfillment trends</p>
+  <div class="chart-grid">
+    <div class="chart-card">
+      <h2>Queue penetration % — raw vs full-value PTP</h2>
+      <div class="chart-wrap"><canvas id="chartPenRate"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h2>PTP fulfillment vs recovery rate (%)</h2>
+      <div class="chart-wrap"><canvas id="chartPenFulfil"></canvas></div>
+    </div>
+  </div>
+  <div class="chart-grid">
+    <div class="chart-card">
+      <h2>Queue exposure vs recovered volume (Rm)</h2>
+      <div class="chart-wrap"><canvas id="chartPenVolume"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h2>Loans in queue</h2>
+      <div class="chart-wrap"><canvas id="chartPenLoans"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Penetration detail table -->
+  <p class="section-title">Monthly detail (in-term queue)</p>
+  <div class="table-card">
+    <table class="seg-table">
+      <thead>
+        <tr>
+          <th class="lt">Metric</th>
+          <th>Nov 25</th><th>Dec 25</th><th>Jan 26</th><th>Feb 26</th><th>Mar 26</th><th>Apr 26</th><th>May 26</th>
+          <th>MoM Δ</th>
+          <th>3M Avg</th>
+          <th>YoY</th>
+        </tr>
+      </thead>
+      <tbody>
+        
+        <tr>
+          <td class="lt metric-name">Loans in queue</td>
+          
+          <td class="">471</td>
+          
+          <td class="">1,185</td>
+          
+          <td class="">2,536</td>
+          
+          <td class="">1,500</td>
+          
+          <td class="">869</td>
+          
+          <td class="">659</td>
+          
+          <td class="latest">671</td>
+          
+          <td class="delta pos">+12</td>
+          <td>733</td>
+          <td class="delta neg">-913</td>
+        </tr>
+        
+        <tr>
+          <td class="lt metric-name">Queue exposure (Rm)</td>
+          
+          <td class="">R0.90m</td>
+          
+          <td class="">R2.13m</td>
+          
+          <td class="">R4.29m</td>
+          
+          <td class="">R2.51m</td>
+          
+          <td class="">R1.45m</td>
+          
+          <td class="">R1.10m</td>
+          
+          <td class="latest">R1.15m</td>
+          
+          <td class="delta pos">+R0.05m</td>
+          <td>R1.23m</td>
+          <td class="delta neg">-R1.71m</td>
+        </tr>
+        
+        <tr>
+          <td class="lt metric-name">Recovered (Rm)</td>
+          
+          <td class="">R0.40m</td>
+          
+          <td class="">R0.36m</td>
+          
+          <td class="">R0.86m</td>
+          
+          <td class="">R0.74m</td>
+          
+          <td class="">R0.49m</td>
+          
+          <td class="">R0.44m</td>
+          
+          <td class="latest">R0.43m</td>
+          
+          <td class="delta neg">-R0.00m</td>
+          <td>R0.45m</td>
+          <td class="delta neg">-R0.35m</td>
+        </tr>
+        
+        <tr>
+          <td class="lt metric-name">Penetration %</td>
+          
+          <td class="">67.9%</td>
+          
+          <td class="">66.8%</td>
+          
+          <td class="">76.3%</td>
+          
+          <td class="">45.9%</td>
+          
+          <td class="">54.8%</td>
+          
+          <td class="">58.4%</td>
+          
+          <td class="latest">55.3%</td>
+          
+          <td class="delta neg">-3.1pp</td>
+          <td>56.2%</td>
+          <td class="delta neg">-5.3pp</td>
+        </tr>
+        
+        <tr>
+          <td class="lt metric-name">Full-value penetration %</td>
+          
+          <td class="">75.8%</td>
+          
+          <td class="">93.0%</td>
+          
+          <td class="">92.2%</td>
+          
+          <td class="">92.0%</td>
+          
+          <td class="">89.9%</td>
+          
+          <td class="">85.6%</td>
+          
+          <td class="latest">83.5%</td>
+          
+          <td class="delta neg">-2.1pp</td>
+          <td>86.3%</td>
+          <td class="delta pos">+45.8pp</td>
+        </tr>
+        
+        <tr>
+          <td class="lt metric-name">PTP fulfillment %</td>
+          
+          <td class="">37.5%</td>
+          
+          <td class="">15.9%</td>
+          
+          <td class="">21.1%</td>
+          
+          <td class="">26.0%</td>
+          
+          <td class="">26.9%</td>
+          
+          <td class="">32.8%</td>
+          
+          <td class="latest">29.7%</td>
+          
+          <td class="delta neg">-3.1pp</td>
+          <td>29.8%</td>
+          <td class="delta neg">-2.2pp</td>
+        </tr>
+        
+        <tr>
+          <td class="lt metric-name">Recovery rate %</td>
+          
+          <td class="">44.7%</td>
+          
+          <td class="">16.7%</td>
+          
+          <td class="">20.0%</td>
+          
+          <td class="">29.6%</td>
+          
+          <td class="">33.7%</td>
+          
+          <td class="">39.8%</td>
+          
+          <td class="latest">37.6%</td>
+          
+          <td class="delta neg">-2.2pp</td>
+          <td>37.1%</td>
+          <td class="delta pos">+10.1pp</td>
+        </tr>
+        
+      </tbody>
+    </table>
+  </div>
+
+  </div><!-- /view-pen -->
+
 </main>
 
 <footer>
   Yield = net_receipts / (opening_arrears + instalment_due) &middot; Payer rate = payers / loan_count &middot;
   Auto = DebiCheck (Instalment Receipt) &middot; Effort = agent (Other Receipt)<br>
   Population: opening segments MP1 · MP2 · MP3+ (in-term arrears) &middot;
-  FASTA Internal Collections &middot; 2026-06-26 10:43 &middot; Source: redblade
+  FASTA Internal Collections &middot; 2026-06-26 12:22 &middot; Source: redblade
 </footer>
 
 <script>
@@ -1562,6 +1805,72 @@ new Chart(document.getElementById('chartRollTrends'), {
     responsive: true, maintainAspectRatio: false,
     plugins: { legend: { position: 'top', align: 'start', labels: { boxWidth: 12, padding: 12 } } },
     scales: { x: { grid, ticks: { maxRotation: 45 } }, y: { grid, min: 0, ticks: { callback: pctTick } } },
+  },
+});
+
+// ════════════════════════════════════════════════════════════════
+// Queue Penetration (PTP coverage & fulfillment)
+// ════════════════════════════════════════════════════════════════
+const PEN = {"months": ["Apr 25", "May 25", "Jun 25", "Jul 25", "Aug 25", "Sep 25", "Oct 25", "Nov 25", "Dec 25", "Jan 26", "Feb 26", "Mar 26", "Apr 26", "May 26"], "pen_raw": [75.3904, 60.6061, 70.2683, 53.3909, 61.6352, 65.9836, 67.5556, 67.9406, 66.8354, 76.3407, 45.9333, 54.7756, 58.4219, 55.2906], "pen_adj": [34.895, 37.6263, 37.3323, 40.5672, 61.0063, 66.1885, 70.8889, 75.7962, 92.9958, 92.1924, 92.0, 89.8734, 85.5842, 83.4575], "fulfillment": [26.9158, 31.9271, 25.2432, 35.5885, 44.6715, 42.4419, 39.1557, 37.4622, 15.9172, 21.1345, 26.0479, 26.9015, 32.7731, 29.6976], "recovery": [23.6764, 27.4836, 22.1166, 36.0012, 52.7298, 47.6654, 46.8653, 44.6995, 16.6864, 19.9517, 29.6433, 33.7297, 39.848, 37.6271], "exposure_rm": [3.3849, 2.8614, 2.3793, 1.4206, 0.8627, 0.8848, 0.8117, 0.8961, 2.1314, 4.2938, 2.5104, 1.4467, 1.1006, 1.1533], "recovered_rm": [0.8014, 0.7864, 0.5262, 0.5114, 0.4549, 0.4218, 0.3804, 0.4005, 0.3557, 0.8567, 0.7442, 0.488, 0.4386, 0.434], "loans": [1857.0, 1584.0, 1342.0, 811.0, 477.0, 488.0, 450.0, 471.0, 1185.0, 2536.0, 1500.0, 869.0, 659.0, 671.0]};
+
+function penLine(canvasId, datasets, yOpts) {
+  new Chart(document.getElementById(canvasId), {
+    type: 'line',
+    data: {
+      labels: PEN.months,
+      datasets: datasets.map(ds => ({
+        ...ds, backgroundColor: ds.borderColor + '22',
+        borderWidth: 2, pointRadius: 2.5, tension: 0.35, fill: false, spanGaps: true,
+      })),
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'top', align: 'start', labels: { boxWidth: 12, padding: 12 } } },
+      scales: { x: { grid, ticks: { maxRotation: 45 } }, y: Object.assign({ grid }, yOpts) },
+    },
+  });
+}
+
+// 1 — Penetration % (raw vs full-value)
+penLine('chartPenRate', [
+  { label: 'Penetration (any PTP)',  data: PEN.pen_raw, borderColor: ACCENT },
+  { label: 'Full-value PTP (≥80%)',  data: PEN.pen_adj, borderColor: PRIMARY },
+], { min: 0, ticks: { callback: pctTick } });
+
+// 2 — Fulfillment vs recovery rate
+penLine('chartPenFulfil', [
+  { label: 'PTP fulfillment (kept)', data: PEN.fulfillment, borderColor: '#2e9e6b' },
+  { label: 'Recovery rate',          data: PEN.recovery,    borderColor: '#e2483d' },
+], { min: 0, ticks: { callback: pctTick } });
+
+// 3 — Queue exposure vs recovered volume (Rm)
+new Chart(document.getElementById('chartPenVolume'), {
+  type: 'bar',
+  data: {
+    labels: PEN.months,
+    datasets: [
+      { label: 'Queue exposure', data: PEN.exposure_rm, backgroundColor: ACCENT + 'aa', borderColor: ACCENT, borderWidth: 1, borderRadius: 2 },
+      { label: 'Recovered',      data: PEN.recovered_rm, backgroundColor: '#2e9e6b' + 'dd', borderColor: '#2e9e6b', borderWidth: 1, borderRadius: 2 },
+    ],
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'top', align: 'start', labels: { boxWidth: 12, padding: 12 } } },
+    scales: { x: { grid, ticks: { maxRotation: 45 } }, y: { grid, min: 0, ticks: { callback: v => 'R' + v.toFixed(1) + 'm' } } },
+  },
+});
+
+// 4 — Loans in queue
+new Chart(document.getElementById('chartPenLoans'), {
+  type: 'bar',
+  data: {
+    labels: PEN.months,
+    datasets: [{ label: 'Loans in queue', data: PEN.loans, backgroundColor: PRIMARY + 'cc', borderColor: PRIMARY, borderWidth: 1, borderRadius: 2 }],
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'top', align: 'start', labels: { boxWidth: 12, padding: 12 } } },
+    scales: { x: { grid, ticks: { maxRotation: 45 } }, y: { grid, min: 0, ticks: { callback: v => v.toLocaleString() } } },
   },
 });
 
