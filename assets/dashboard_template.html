@@ -326,24 +326,34 @@
   </div>
 
   <!-- Penetration charts -->
-  <p class="section-title">Coverage &amp; fulfillment trends</p>
+  <p class="section-title">Coverage, fulfillment &amp; recovery trends</p>
   <div class="chart-grid">
     <div class="chart-card">
-      <h2>Queue penetration % — raw vs full-value PTP</h2>
+      <h2>Queue penetration % — by PTP timing</h2>
       <div class="chart-wrap"><canvas id="chartPenRate"></canvas></div>
     </div>
     <div class="chart-card">
-      <h2>PTP fulfillment vs recovery rate (%)</h2>
+      <h2>PTP fulfillment % (kept rate) — by timing</h2>
       <div class="chart-wrap"><canvas id="chartPenFulfil"></canvas></div>
     </div>
   </div>
   <div class="chart-grid">
     <div class="chart-card">
-      <h2>Queue exposure vs recovered volume (Rm)</h2>
+      <h2>Recovery yield % — this month vs next month</h2>
+      <div class="chart-wrap"><canvas id="chartPenRecov"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h2>Collections yield vs recovery yield (%)</h2>
+      <div class="chart-wrap"><canvas id="chartPenYield"></canvas></div>
+    </div>
+  </div>
+  <div class="chart-grid">
+    <div class="chart-card">
+      <h2>Rand funnel — exposure → promised → recovered (Rm)</h2>
       <div class="chart-wrap"><canvas id="chartPenVolume"></canvas></div>
     </div>
     <div class="chart-card">
-      <h2>Loans in queue</h2>
+      <h2>Queue size — loans vs loans with a PTP</h2>
       <div class="chart-wrap"><canvas id="chartPenLoans"></canvas></div>
     </div>
   </div>
@@ -541,25 +551,51 @@ function penLine(canvasId, datasets, yOpts) {
   });
 }
 
-// 1 — Penetration % (raw vs full-value)
+// 1 — Penetration % by PTP timing (this month / next month / either)
 penLine('chartPenRate', [
-  { label: 'Penetration (any PTP)',  data: PEN.pen_raw, borderColor: ACCENT },
-  { label: 'Full-value PTP (≥80%)',  data: PEN.pen_adj, borderColor: PRIMARY },
+  { label: 'PTP this month', data: PEN.pen_in_month,   borderColor: ACCENT },
+  { label: 'PTP next month', data: PEN.pen_next_month, borderColor: '#b8860b' },
+  { label: 'Any PTP',        data: PEN.pen_total,      borderColor: PRIMARY },
 ], { min: 0, ticks: { callback: pctTick } });
 
-// 2 — Fulfillment vs recovery rate
+// 2 — PTP fulfillment % (kept rate) by timing
 penLine('chartPenFulfil', [
-  { label: 'PTP fulfillment (kept)', data: PEN.fulfillment, borderColor: '#2e9e6b' },
-  { label: 'Recovery rate',          data: PEN.recovery,    borderColor: '#e2483d' },
+  { label: 'PTP this month', data: PEN.fulfil_in_month,   borderColor: ACCENT },
+  { label: 'PTP next month', data: PEN.fulfil_next_month, borderColor: '#b8860b' },
+  { label: 'All PTPs',       data: PEN.fulfil_total,      borderColor: '#2e9e6b' },
 ], { min: 0, ticks: { callback: pctTick } });
 
-// 3 — Queue exposure vs recovered volume (Rm)
+// 3 — Recovery yield % split by timing (in-month + next-month stack to total)
+new Chart(document.getElementById('chartPenRecov'), {
+  type: 'bar',
+  data: {
+    labels: PEN.months,
+    datasets: [
+      { label: 'Recovered this month', data: PEN.recov_in_month,   backgroundColor: PRIMARY + 'cc', borderColor: PRIMARY, borderWidth: 1, borderRadius: 2, stack: 's' },
+      { label: 'Recovered next month', data: PEN.recov_next_month, backgroundColor: '#b8860b' + 'cc', borderColor: '#b8860b', borderWidth: 1, borderRadius: 2, stack: 's' },
+    ],
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'top', align: 'start', labels: { boxWidth: 12, padding: 12 } } },
+    scales: { x: { grid, stacked: true, ticks: { maxRotation: 45 } }, y: { grid, stacked: true, min: 0, ticks: { callback: pctTick } } },
+  },
+});
+
+// 4 — Collections yield vs recovery yield (the two headline yields)
+penLine('chartPenYield', [
+  { label: 'Collections yield', data: PEN.collections_yield, borderColor: PRIMARY },
+  { label: 'Recovery yield',    data: PEN.recovery_yield,    borderColor: '#2e9e6b' },
+], { min: 0, ticks: { callback: pctTick } });
+
+// 5 — Rand funnel: exposure → promised → recovered (Rm)
 new Chart(document.getElementById('chartPenVolume'), {
   type: 'bar',
   data: {
     labels: PEN.months,
     datasets: [
-      { label: 'Queue exposure', data: PEN.exposure_rm, backgroundColor: ACCENT + 'aa', borderColor: ACCENT, borderWidth: 1, borderRadius: 2 },
+      { label: 'Queue exposure', data: PEN.exposure_rm,  backgroundColor: ACCENT + 'aa', borderColor: ACCENT, borderWidth: 1, borderRadius: 2 },
+      { label: 'Promised',       data: PEN.promised_rm,  backgroundColor: '#b8860b' + 'cc', borderColor: '#b8860b', borderWidth: 1, borderRadius: 2 },
       { label: 'Recovered',      data: PEN.recovered_rm, backgroundColor: '#2e9e6b' + 'dd', borderColor: '#2e9e6b', borderWidth: 1, borderRadius: 2 },
     ],
   },
@@ -570,12 +606,15 @@ new Chart(document.getElementById('chartPenVolume'), {
   },
 });
 
-// 4 — Loans in queue
+// 6 — Queue size: loans in queue vs loans with a PTP
 new Chart(document.getElementById('chartPenLoans'), {
   type: 'bar',
   data: {
     labels: PEN.months,
-    datasets: [{ label: 'Loans in queue', data: PEN.loans, backgroundColor: PRIMARY + 'cc', borderColor: PRIMARY, borderWidth: 1, borderRadius: 2 }],
+    datasets: [
+      { label: 'Loans in queue', data: PEN.loans,          backgroundColor: PRIMARY + 'cc', borderColor: PRIMARY, borderWidth: 1, borderRadius: 2 },
+      { label: 'Loans with PTP', data: PEN.loans_with_ptp, backgroundColor: ACCENT + 'cc', borderColor: ACCENT, borderWidth: 1, borderRadius: 2 },
+    ],
   },
   options: {
     responsive: true, maintainAspectRatio: false,

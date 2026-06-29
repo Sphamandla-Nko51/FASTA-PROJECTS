@@ -30,26 +30,58 @@ def get_queue_penetration_data(engine=None) -> pd.DataFrame:
 
 # Additive columns that sum cleanly across end-departments; ratio metrics are
 # re-derived from these sums (never average the pre-computed *_pct columns).
+# Each metric carries an in-month / in-next-month / combined split: the PTP can
+# be scheduled in the reporting month or forward-booked into the following one.
 _ADDITIVE_COLS = [
-    "number_of_loans", "total_queue_exposure", "total_recovered_volume",
-    "number_of_loans_with_ptp_dos", "number_of_loans_with_ptp_dos_adj",
-    "number_of_ptp_dos", "number_of_kept_dos",
-    "number_of_ptp_dos_adj", "number_of_kept_dos_adj",
+    # queue size & financial flow
+    "number_of_loans",
+    "opening_balance", "closing_balance", "arrears",
+    "instalment_due_in_month", "total_due_in_month", "net_receipts",
+    # penetration (loans with a PTP arrangement)
+    "number_of_loans_with_ptp_dos_in_month",
+    "number_of_loans_with_ptp_dos_in_next_month",
+    "number_of_loans_with_ptp_dos",
+    # PTP arrangement counts (made / kept) — for fulfillment
+    "number_of_attempted_ptp_dos_in_month", "number_of_attempted_ptp_dos_in_next_month",
+    "number_of_attempted_ptp_dos",
+    "number_of_settled_ptp_do_in_month", "number_of_settled_ptp_do_in_next_month",
+    "number_of_settled_ptp_do",
+    # rand exposure / promised / recovered
+    "total_queue_exposure",
+    "attempted_recovery_volume_in_month", "attempted_recovery_volume_in_next_month",
+    "attempted_recovered_volume",
+    "total_recovered_volume_in_month", "total_recovered_volume_in_next_month",
+    "total_recovered_volume",
 ]
 
 
 def _derive_rates(g: pd.DataFrame) -> pd.DataFrame:
-    """Re-derive the penetration / fulfillment / recovery rates from the summed
-    additive columns."""
+    """Re-derive every rate from the summed additive columns. Done per timing
+    split so each is exact at the start-of-month queue level."""
     loans = g["number_of_loans"].replace(0, np.nan)
     expo  = g["total_queue_exposure"].replace(0, np.nan)
-    ptp   = g["number_of_ptp_dos"].replace(0, np.nan)
-    ptpa  = g["number_of_ptp_dos_adj"].replace(0, np.nan)
-    g["penetration_rate_pct"]       = g["number_of_loans_with_ptp_dos"] / loans * 100
-    g["penetration_rate_adj_pct"]   = g["number_of_loans_with_ptp_dos_adj"] / loans * 100
-    g["ptp_fulfillment_rate_pct"]   = g["number_of_kept_dos"] / ptp * 100
-    g["ptp_fulfillment_rate_adj_pct"] = g["number_of_kept_dos_adj"] / ptpa * 100
-    g["recovery_rate_pct"]          = g["total_recovered_volume"] / expo * 100
+    due   = g["total_due_in_month"].replace(0, np.nan)
+
+    # penetration — loans with a PTP / loans in queue
+    g["penetration_rate_in_month_pct"]      = g["number_of_loans_with_ptp_dos_in_month"] / loans * 100
+    g["penetration_rate_in_next_month_pct"] = g["number_of_loans_with_ptp_dos_in_next_month"] / loans * 100
+    g["penetration_rate_pct"]               = g["number_of_loans_with_ptp_dos"] / loans * 100
+
+    # PTP fulfillment — kept arrangements / arrangements made (kept rate)
+    att_m = g["number_of_attempted_ptp_dos_in_month"].replace(0, np.nan)
+    att_n = g["number_of_attempted_ptp_dos_in_next_month"].replace(0, np.nan)
+    att   = g["number_of_attempted_ptp_dos"].replace(0, np.nan)
+    g["ptp_fulfillment_rate_in_month_pct"]      = g["number_of_settled_ptp_do_in_month"] / att_m * 100
+    g["ptp_fulfillment_rate_in_next_month_pct"] = g["number_of_settled_ptp_do_in_next_month"] / att_n * 100
+    g["ptp_fulfillment_rate_pct"]               = g["number_of_settled_ptp_do"] / att * 100
+
+    # recovery yield — rand recovered / queue exposure (original instalment)
+    g["recovery_yield_in_month_pct"]   = g["total_recovered_volume_in_month"] / expo * 100
+    g["recovery_yield_next_month_pct"] = g["total_recovered_volume_in_next_month"] / expo * 100
+    g["recovery_yield_pct"]            = g["total_recovered_volume"] / expo * 100
+
+    # collections yield — net receipts / total due (arrears + instalment due)
+    g["collections_yield_pct"] = g["net_receipts"] / due * 100
     return g
 
 
@@ -58,11 +90,12 @@ def get_queue_penetration_frame(engine=None) -> pd.DataFrame:
 
     Aggregates across the end-of-month department (summing additive counts and
     volumes) so each row is a queue's whole start-of-month population, and
-    re-derives the rate metrics:
-      - penetration_rate_pct       = loans_with_ptp / loans * 100
-      - penetration_rate_adj_pct   = loans_with_ptp_adj / loans * 100  (PTP ≥ 80% of instalment)
-      - ptp_fulfillment_rate_pct   = kept_dos / ptp_dos * 100  (kept rate of arrangements made)
-      - recovery_rate_pct          = recovered_volume / queue_exposure * 100
+    re-derives the rate metrics (each with an in-month / in-next-month / combined
+    split — the PTP can be due this month or forward-booked into the next):
+      - penetration_rate_pct    = loans_with_ptp / loans * 100
+      - ptp_fulfillment_rate_pct = kept_dos / ptp_dos * 100  (kept rate of arrangements made)
+      - recovery_yield_pct      = recovered_volume / queue_exposure * 100
+      - collections_yield_pct   = net_receipts / total_due (arrears + instalment due) * 100
     """
     df = get_queue_penetration_data(engine)
     df["reporting_month"] = pd.to_datetime(df["reporting_month"])

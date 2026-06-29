@@ -390,14 +390,16 @@ def build_roll_rate_charts(frame: pd.DataFrame) -> dict:
     }
 
 
-# ── queue penetration (PTP coverage & fulfillment) ──────────────────────────
+# ── queue penetration (PTP coverage, fulfillment & recovery) ────────────────
 # Headline KPIs for the penetration tab, over the primary in-term queue's
 # monthly series. (label, column, higher-is-better) — all higher-is-better.
+# The funnel: cover the queue (penetration) → keep the arrangement
+# (fulfillment) → recover the rand (recovery yield) → overall (collections yield).
 _PEN_KPIS = [
-    ("Penetration rate",       "penetration_rate_pct",     True),
-    ("Full-value penetration", "penetration_rate_adj_pct", True),
-    ("PTP fulfillment",        "ptp_fulfillment_rate_pct", True),
-    ("Recovery rate",          "recovery_rate_pct",        True),
+    ("Penetration rate", "penetration_rate_pct",     True),
+    ("PTP fulfillment",  "ptp_fulfillment_rate_pct", True),
+    ("Recovery yield",   "recovery_yield_pct",       True),
+    ("Collections yield", "collections_yield_pct",   True),
 ]
 
 
@@ -450,18 +452,28 @@ def _pen_series(frame, col, months, scale=1.0):
 def build_penetration_charts(frame: pd.DataFrame) -> dict:
     months = _pen_months(frame)
     return {
-        "months":      [_label(m) for m in months],
-        # 1 — penetration % over time (raw vs full-value)
-        "pen_raw":     _pen_series(frame, "penetration_rate_pct", months),
-        "pen_adj":     _pen_series(frame, "penetration_rate_adj_pct", months),
-        # 2 — fulfillment (kept rate) vs recovery rate over time
-        "fulfillment": _pen_series(frame, "ptp_fulfillment_rate_pct", months),
-        "recovery":    _pen_series(frame, "recovery_rate_pct", months),
-        # 3 — queue exposure vs recovered volume (Rm)
+        "months": [_label(m) for m in months],
+        # 1 — penetration % over time, by PTP timing (this month / next / either)
+        "pen_in_month":   _pen_series(frame, "penetration_rate_in_month_pct", months),
+        "pen_next_month": _pen_series(frame, "penetration_rate_in_next_month_pct", months),
+        "pen_total":      _pen_series(frame, "penetration_rate_pct", months),
+        # 2 — PTP fulfillment (kept rate) % over time, by timing
+        "fulfil_in_month":   _pen_series(frame, "ptp_fulfillment_rate_in_month_pct", months),
+        "fulfil_next_month": _pen_series(frame, "ptp_fulfillment_rate_in_next_month_pct", months),
+        "fulfil_total":      _pen_series(frame, "ptp_fulfillment_rate_pct", months),
+        # 3 — recovery yield % split by timing (in-month + next-month stack to total)
+        "recov_in_month":   _pen_series(frame, "recovery_yield_in_month_pct", months),
+        "recov_next_month": _pen_series(frame, "recovery_yield_next_month_pct", months),
+        # 4 — collections yield vs recovery yield (the two headline yields)
+        "collections_yield": _pen_series(frame, "collections_yield_pct", months),
+        "recovery_yield":    _pen_series(frame, "recovery_yield_pct", months),
+        # 5 — rand funnel: exposure → promised (attempted) → recovered (Rm)
         "exposure_rm":  _pen_series(frame, "total_queue_exposure", months, scale=1e-6),
+        "promised_rm":  _pen_series(frame, "attempted_recovered_volume", months, scale=1e-6),
         "recovered_rm": _pen_series(frame, "total_recovered_volume", months, scale=1e-6),
-        # 4 — queue size (loans in queue)
-        "loans":        _pen_series(frame, "number_of_loans", months),
+        # 6 — queue size: loans in queue vs loans covered by a PTP
+        "loans":          _pen_series(frame, "number_of_loans", months),
+        "loans_with_ptp": _pen_series(frame, "number_of_loans_with_ptp_dos", months),
     }
 
 
@@ -497,13 +509,16 @@ def _pen_metric_row(frame, label, col, unit, months, scale=1.0):
 def build_penetration_table(frame: pd.DataFrame) -> dict:
     months = _pen_months(frame)
     metric_specs = [
-        ("Loans in queue",         "number_of_loans",          "count", 1.0),
-        ("Queue exposure (Rm)",    "total_queue_exposure",     "rm",    1e-6),
-        ("Recovered (Rm)",         "total_recovered_volume",   "rm",    1e-6),
-        ("Penetration %",          "penetration_rate_pct",     "pct",   1.0),
-        ("Full-value penetration %", "penetration_rate_adj_pct", "pct", 1.0),
-        ("PTP fulfillment %",      "ptp_fulfillment_rate_pct", "pct",   1.0),
-        ("Recovery rate %",        "recovery_rate_pct",        "pct",   1.0),
+        ("Loans in queue",      "number_of_loans",            "count", 1.0),
+        ("Loans with PTP",      "number_of_loans_with_ptp_dos", "count", 1.0),
+        ("Queue exposure (Rm)", "total_queue_exposure",       "rm",    1e-6),
+        ("Promised (Rm)",       "attempted_recovered_volume", "rm",    1e-6),
+        ("Recovered (Rm)",      "total_recovered_volume",     "rm",    1e-6),
+        ("Net receipts (Rm)",   "net_receipts",               "rm",    1e-6),
+        ("Penetration %",       "penetration_rate_pct",       "pct",   1.0),
+        ("PTP fulfillment %",   "ptp_fulfillment_rate_pct",   "pct",   1.0),
+        ("Recovery yield %",    "recovery_yield_pct",         "pct",   1.0),
+        ("Collections yield %", "collections_yield_pct",      "pct",   1.0),
     ]
     return {
         "month_headers": [_label(m) for m in months[-7:]],

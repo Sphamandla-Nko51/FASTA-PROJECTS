@@ -66,17 +66,22 @@ Driven by `sql/roll_rates_by_days_past_due.sql` via `tools/roll_rates_by_dpd.py:
 
 > **Movement reclassification:** the query's own `movement_type` column is unreliable — its CASE compares against mis-typed literals (`'0.Current'`, `'7.91DPD'`) that don't match the actual band labels (`'0. Current'`, `'6. 91DPD'`), so it only ever emits Stable/Rolled Forward/Rolled Backward. `roll_rates_by_dpd.classify_movement()` re-derives the intended 7-way taxonomy from the start/end bands. The fix belongs in the SQL eventually.
 
-### Tab 3 — Queue Penetration (PTP coverage & fulfillment, in-term queue)
-Driven by `sql/collections_queue_penetration.sql` via `tools/queue_penetration.py::get_primary_queue_frame`. Measures how much of the collections queue gets a Promise-to-Pay (PTP) arrangement, how many of those arrangements are kept, and how much money is recovered. Scoped to the `Internal Collections - in term` **start-of-month** queue (the headline queue); the raw query also covers other start queues (e.g. `Current`).
-1. **Summary cards** (latest full month, MoM Δ; all higher = better):
-   - **Penetration rate** = loans with any PTP / loans in queue
-   - **Full-value penetration** = loans with a PTP ≥ 80% of the instalment / loans in queue (the meaningful coverage signal — raw penetration runs near-saturated)
-   - **PTP fulfillment** = kept arrangements / arrangements made (kept rate)
-   - **Recovery rate** = recovered volume / queue exposure
-2. **Charts** (monthly series across the window): raw vs full-value penetration % (line); PTP fulfillment vs recovery % (line); queue exposure vs recovered volume (Rm, grouped bar); loans in queue (bar).
-3. **Monthly-detail table** — 7 metric rows (loans in queue, queue exposure Rm, recovered Rm, penetration %, full-value penetration %, PTP fulfillment %, recovery %) × last 7 months + MoM Δ / 3M Avg / YoY.
+### Tab 3 — Queue Penetration (PTP coverage, fulfillment & recovery, in-term queue)
+Driven by `sql/collections_queue_penetration.sql` via `tools/queue_penetration.py::get_primary_queue_frame`. Measures how much of the collections queue gets a Promise-to-Pay (PTP) arrangement, how many of those arrangements are kept, how much money is recovered, and the overall collections yield. Scoped to the `Internal Collections - in term` **start-of-month** queue (the headline queue); the raw query also covers other start queues (e.g. `Current`).
 
-> **Aggregation:** raw rows are split by `(reporting_month, start dept, end dept)`. `get_queue_penetration_frame()` sums the additive counts/volumes across the **end** department so penetration is measured at the start-of-month queue level, then re-derives the rates. The SQL exposes `number_of_ptp_dos`/`number_of_kept_dos` (+ adj) for exactly this — never average the pre-computed `*_pct` columns.
+Every PTP/recovery metric carries a **timing split** — the arrangement can be due *in the reporting month* (`_in_month`) or forward-booked into the *next month* (`_in_next_month`); the combined figure is the headline. Volumes and counts sum cleanly across timing (`in_month + next_month = total`); penetration is loan-level (a loan can have a PTP in both months, so the combined is an OR, not a sum).
+
+1. **Summary cards** (latest full month, MoM Δ; all higher = better) — the collections funnel:
+   - **Penetration rate** = loans with any PTP / loans in queue
+   - **PTP fulfillment** = kept arrangements / arrangements made (kept rate)
+   - **Recovery yield** = recovered volume / queue exposure (original instalment)
+   - **Collections yield** = net receipts / total due (arrears + instalment due)
+2. **Charts** (monthly series across the window): penetration % by PTP timing (line — this month / next month / any); PTP fulfillment % by timing (line); recovery yield % this-month vs next-month (stacked bar); collections vs recovery yield (line); rand funnel — exposure → promised → recovered (Rm, grouped bar); queue size — loans vs loans with a PTP (grouped bar).
+3. **Monthly-detail table** — 10 metric rows (loans in queue, loans with PTP, queue exposure Rm, promised Rm, recovered Rm, net receipts Rm, penetration %, PTP fulfillment %, recovery yield %, collections yield %) × last 7 months + MoM Δ / 3M Avg / YoY.
+
+> **Aggregation:** raw rows are split by `(reporting_month, start dept, end dept)`. `get_queue_penetration_frame()` sums the additive counts/volumes/financials across the **end** department so each metric is measured at the start-of-month queue level, then re-derives every rate (per timing split). The SQL exposes `number_of_attempted_ptp_dos`/`number_of_settled_ptp_do` (+ in-month/next-month) for exactly this — never average the pre-computed `*_pct` columns; re-derive from the count/volume sums.
+
+> **PTP join fan-out (fixed):** the `master` CTE left-joins the attempted-PTP and settled-PTP tables on `loannumber`. `ptp_orders` was originally one row *per debit order* while `settled_ptp_orders` is one row *per loan-month*, so a loan with N attempted DOs multiplied the settled counts/volumes by N — inflating fulfillment (>100%) and recovery. `ptp_orders` is now pre-aggregated to one row per `(loannumber, scheduled_month)` so the joins are 1:1. Penetration (loan-level flags) and financial columns (GROUP BY keys) were unaffected by the bug.
 
 ## Updating Targets
 Edit `assets/targets.json` (percentages, not fractions):

@@ -1,6 +1,6 @@
 {
   "period": "Latest reporting month: May 2026",
-  "generated_at": "2026-06-26 12:22",
+  "generated_at": "2026-06-29 13:49",
   "latest_month": "May 2026",
   "in_term": {
     "cards": [
@@ -67,9 +67,9 @@
       {
         "segment": "MP1",
         "yield_pct": {
-          "latest": 28.8515,
-          "mom": 1.1592,
-          "yoy": -0.7718
+          "latest": 28.8516,
+          "mom": 1.1593,
+          "yoy": -0.7717
         },
         "collections_rm": {
           "latest": 2.3267,
