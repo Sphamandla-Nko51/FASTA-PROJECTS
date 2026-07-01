@@ -15,6 +15,9 @@ sys.path.insert(0, str(Path(__file__).parent))
 from collection_by_segment import get_segment_frame
 from roll_rates_by_dpd import get_roll_rates_frame
 from queue_penetration import get_primary_queue_frame, PRIMARY_QUEUE
+from out_of_term_collections import (
+    get_out_of_term_data, get_oot_band_frame, get_oot_total_frame, BAND_LABELS,
+)
 
 load_dotenv()
 
@@ -527,6 +530,175 @@ def build_penetration_table(frame: pd.DataFrame) -> dict:
     }
 
 
+# ── out-of-term collections (recovery on the OOT book) ──────────────────────
+# Per-band left-border colours for the detail table (screenshot palette).
+_OOT_BAND_COLORS = {
+    "0–3 mths":   "#2e9e6b",
+    "4–6 mths":   "#01a9e6",
+    "7–12 mths":  "#b8860b",
+    "13–24 mths": "#e2483d",
+    "24+ mths":   "#8b5cf6",
+}
+
+# Detail-table metric rows per band. Collections = FTTC (instalment + effort),
+# Yield = FTTC / opening_balance, Effort % = effort / FTTC collections.
+_OOT_METRIC_SPECS = [
+    ("Collections (Rm)", "fttc_collections", "rm",  1e-6),
+    ("Yield %",          "yield_pct",        "pct", 1.0),
+    ("Payer rate %",     "payer_rate_pct",   "pct", 1.0),
+    ("Effort %",         "effort_pct",       "pct", 1.0),
+]
+
+
+def _oot_months(total: pd.DataFrame) -> list:
+    return sorted(total["transaction_month"].unique())
+
+
+def _oot_series(frame: pd.DataFrame, col: str, months: list, scale: float = 1.0):
+    """Monthly series for a column over the canonical month axis."""
+    s = frame.set_index("transaction_month")[col]
+    out = []
+    for m in months:
+        if m in s.index and pd.notna(s.loc[m]):
+            out.append(round(float(s.loc[m]) * scale, 6))
+        else:
+            out.append(None)
+    return out
+
+
+def _rolling3(vals: list) -> list:
+    """Trailing 3-month average (ignoring gaps), aligned to each month."""
+    out = []
+    for i in range(len(vals)):
+        window = [v for v in vals[max(0, i - 2):i + 1] if v is not None]
+        out.append(round(sum(window) / len(window), 4) if window else None)
+    return out
+
+
+def _oot_stats(total: pd.DataFrame, months: list, col: str, scale: float = 1.0):
+    vals = _oot_series(total, col, months, scale)
+    latest = vals[-1]
+    prev = vals[-2] if len(vals) >= 2 else None
+    last3 = [v for v in vals[-3:] if v is not None]
+    avg3 = sum(last3) / len(last3) if last3 else None
+    mom = (latest - prev) if latest is not None and prev is not None else None
+    return latest, avg3, mom
+
+
+def compute_oot_cards(total: pd.DataFrame) -> list:
+    months = _oot_months(total)
+    coll_l, coll_a, coll_m = _oot_stats(total, months, "fttc_collections", 1e-6)
+    y_l, y_a, y_m = _oot_stats(total, months, "yield_pct")
+    p_l, p_a, p_m = _oot_stats(total, months, "active_payers")
+    a_l, _, _ = _oot_stats(total, months, "loan_count")
+
+    def yld_delta(d):
+        return (f"{'+' if d >= 0 else ''}{d:.2f}pp") if d is not None else None
+
+    return [
+        {"label": "OOT Collected (FTTC)", "value": f"R{coll_l:.2f}m" if coll_l is not None else "—",
+         "delta": _fmt_delta(coll_m, "rm"), "delta_cls": _cls(coll_m),
+         "sub": f"3m avg R{coll_a:.2f}m" if coll_a is not None else ""},
+        {"label": "OOT Book Yield", "value": f"{y_l:.2f}%" if y_l is not None else "—",
+         "delta": yld_delta(y_m), "delta_cls": _cls(y_m),
+         "sub": f"3m avg {y_a:.2f}%" if y_a is not None else ""},
+        {"label": "OOT Payers", "value": f"{p_l:,.0f}" if p_l is not None else "—",
+         "delta": _fmt_delta(p_m, "count"), "delta_cls": _cls(p_m),
+         "sub": f"3m avg {p_a:,.0f}" if p_a is not None else ""},
+        {"label": "OOT Accounts", "value": f"{a_l:,.0f}" if a_l is not None else "—",
+         "delta": None, "delta_cls": "neutral", "sub": "active OOT book"},
+    ]
+
+
+def compute_oot_hero(total: pd.DataFrame) -> dict:
+    months = _oot_months(total)
+    latest, avg3, mom = _oot_stats(total, months, "yield_pct")
+    if mom is None or abs(mom) < 0.05:
+        trend, tcls = "→ Flat MoM", "neutral"
+    elif mom > 0:
+        trend, tcls = f"↑ +{mom:.2f}pp MoM", "pos"
+    else:
+        trend, tcls = f"↓ {mom:.2f}pp MoM", "neg"
+    return {
+        "value":     f"{latest:.2f}%" if latest is not None else "—",
+        "context":   f"vs R3M avg {avg3:.2f}%" if avg3 is not None else "",
+        "trend":     trend,
+        "trend_cls": tcls,
+    }
+
+
+def build_oot_charts(total: pd.DataFrame) -> dict:
+    months = _oot_months(total)
+    coll = _oot_series(total, "fttc_collections", months, 1e-6)
+    yld  = _oot_series(total, "yield_pct", months)
+    payr = _oot_series(total, "payer_rate_pct", months)
+    return {
+        "months":          [_label(m) for m in months],
+        "collections_rm":  coll,
+        "collections_avg3": _rolling3(coll),
+        "yield_pct":       yld,
+        "yield_avg3":      _rolling3(yld),
+        "payer_rate_pct":  payr,
+        "payer_avg3":      _rolling3(payr),
+        "auto_pct":        _oot_series(total, "auto_pct", months),
+        "effort_pct":      _oot_series(total, "effort_pct", months),
+    }
+
+
+def _oot_metric_row(sub: pd.DataFrame, label, col, unit, months, scale=1.0):
+    s = sub.set_index("transaction_month")[col]
+
+    def val(m):
+        return float(s.loc[m]) * scale if m in s.index and pd.notna(s.loc[m]) else None
+
+    display = months[-7:]
+    latest, prev = months[-1], months[-2] if len(months) >= 2 else None
+    yoy_month = months[-13] if len(months) >= 13 else None
+    last3 = [val(m) for m in months[-3:] if val(m) is not None]
+
+    lv = val(latest)
+    pv = val(prev) if prev is not None else None
+    yv = val(yoy_month) if yoy_month is not None else None
+    mom = (lv - pv) if lv is not None and pv is not None else None
+    yoy = (lv - yv) if lv is not None and yv is not None else None
+    avg3 = sum(last3) / len(last3) if last3 else None
+
+    return {
+        "label":   label,
+        "cells":   [_fmt_val(val(m), unit) for m in display],
+        "mom":     _fmt_delta(mom, unit),
+        "mom_cls": _cls(mom),
+        "avg3":    _fmt_val(avg3, unit),
+        "yoy":     _fmt_delta(yoy, unit),
+        "yoy_cls": _cls(yoy),
+    }
+
+
+def build_oot_table(band: pd.DataFrame, total: pd.DataFrame) -> dict:
+    months = _oot_months(total)
+
+    def seg_block(sub, name, color):
+        return {"segment": name, "color": color,
+                "metrics": [_oot_metric_row(sub, lbl, col, unit, months, scale)
+                            for lbl, col, unit, scale in _OOT_METRIC_SPECS]}
+
+    order = (band[["prev_mpm_band", "band_label"]]
+             .drop_duplicates().sort_values("prev_mpm_band"))
+    band_segments = [
+        seg_block(band[band["prev_mpm_band"] == r.prev_mpm_band],
+                  r.band_label, _OOT_BAND_COLORS.get(r.band_label, "#6b7a99"))
+        for r in order.itertuples()
+    ]
+
+    return {
+        "month_headers": [_label(m) for m in months[-7:]],
+        "groups": [
+            {"header": "By months past maturity (opening MPM band)", "segments": band_segments},
+            {"header": "Total OOT book", "segments": [seg_block(total, "Total", "#3a4a63")]},
+        ],
+    }
+
+
 # ── numeric metrics bundle (for the newsletter) ─────────────────────────────
 def _in_term_values(frame, month):
     sub = frame[(frame["delinquency_bucket"].isin(IN_TERM_BUCKETS)) &
@@ -619,6 +791,7 @@ def build_metrics_bundle(frame, roll_frame, targets, period_label, generated_at)
 
 # ── render ────────────────────────────────────────────────────────────────--
 def render_dashboard(brand, cards, chart_data, table,
+                     oot_cards, oot_hero, oot_chart_data, oot_table,
                      roll_cards, roll_matrix, roll_chart_data,
                      pen_cards, pen_chart_data, pen_table,
                      logo_b64, period_label, generated_at) -> str:
@@ -629,6 +802,10 @@ def render_dashboard(brand, cards, chart_data, table,
         cards=cards,
         chart_data_json=json.dumps(chart_data),
         table=table,
+        oot_cards=oot_cards,
+        oot_hero=oot_hero,
+        oot_chart_data_json=json.dumps(oot_chart_data),
+        oot_table=oot_table,
         roll_cards=roll_cards,
         roll_matrix=roll_matrix,
         roll_chart_data_json=json.dumps(roll_chart_data),
@@ -669,6 +846,20 @@ def main():
     print("Building segment table...")
     table = build_segment_table(frame)
 
+    print("Fetching out-of-term collections data...")
+    oot_raw = get_out_of_term_data(engine)
+    oot_band = get_oot_band_frame(data=oot_raw)
+    oot_total = get_oot_total_frame(data=oot_raw)
+    if oot_band.empty or oot_total.empty:
+        print("Warning: out-of-term query returned no data")
+        sys.exit(1)
+
+    print("Computing out-of-term cards, hero, charts and table...")
+    oot_cards = compute_oot_cards(oot_total)
+    oot_hero = compute_oot_hero(oot_total)
+    oot_chart_data = build_oot_charts(oot_total)
+    oot_table = build_oot_table(oot_band, oot_total)
+
     print("Fetching roll-rate (DPD migration) data...")
     roll_frame = get_roll_rates_frame(engine)
     if roll_frame.empty:
@@ -703,6 +894,7 @@ def main():
 
     print("Rendering dashboard...")
     html = render_dashboard(brand, cards, chart_data, table,
+                            oot_cards, oot_hero, oot_chart_data, oot_table,
                             roll_cards, roll_matrix, roll_chart_data,
                             pen_cards, pen_chart_data, pen_table,
                             logo_b64, period_label, generated_at)
@@ -716,6 +908,7 @@ def main():
         "period":       period_label,
         "generated_at": generated_at,
         "in_term_cards": {c["label"]: c["value"] for c in cards},
+        "oot_cards":     {c["label"]: c["value"] for c in oot_cards},
         "roll_cards":    {c["label"]: c["value"] for c in roll_cards},
         "penetration_cards": {c["label"]: c["value"] for c in pen_cards},
     }, indent=2), encoding="utf-8")

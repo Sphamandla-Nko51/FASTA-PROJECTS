@@ -38,7 +38,7 @@ xdg-open output/dashboard.html # Linux
 
 ## Dashboard Sections
 
-The dashboard has **three tabs** (switcher at the top of the page): In-Term, Roll Rates, and Queue Penetration.
+The dashboard has **four tabs** (switcher at the top of the page): In-Term, Out of Term, Roll Rates, and Queue Penetration.
 
 ### Tab 1 — In-Term (cards + charts cover the in-term book: New Loan + MP0 + MP1 + MP2 + MP3+; only Out of Term/MPM2 excluded)
 1. **Summary cards** (latest full month):
@@ -54,7 +54,19 @@ The dashboard has **three tabs** (switcher at the top of the page): In-Term, Rol
    - Net arrears movement (Rm) — all segments (line — closing arrears − opening arrears)
 3. **Segment table** covering **every delinquency bucket/segment present in the data** (Current/MP0, Early Arrears/MP1·MP2, Deep Arrears/MP3+, New Loan, Out of Term/MPM2 — built dynamically, so new segments appear automatically). Three metric rows per segment — Collections (Rm), Yield %, Payer rate % — with the last 7 months plus MoM Δ (latest vs prior), 3M Avg (mean of last 3 months), and YoY (latest month vs same month prior year). The summary **cards** cover the whole in-term book (all buckets except Out of Term), and the **charts** plot New Loan/MP0/MP1/MP2/MP3+. **Note:** this is broader than the SQL handover's locked arrears-only KPI population (Early + Deep Arrears), so card values/targets read differently from the original arrears-only definition.
 
-### Tab 2 — Roll Rates (DPD migration, whole book)
+### Tab 2 — Out of Term (recovery on the out-of-term book)
+Driven by `sql/out_of_term_collections.sql` via `tools/out_of_term_collections.py` (`get_oot_total_frame` for the whole-book monthly series; `get_oot_band_frame` for the by-opening-MPM-band detail). Population is the out-of-term book (`opening_in_term_flag = FALSE`, `opening_is_active IN (1,2,3,9999)`), stratified by **opening** months-past-maturity band (0–3 / 4–6 / 7–12 / 13–24 / 24+).
+
+**Definitions (per the operational view):** Collections = instalment + effort (FTTC), **not** `net_receipts`; Yield = FTTC collections / opening_balance; Effort % = effort_collections / FTTC collections; Payer rate = active payers / accounts.
+
+1. **Hero banner** — headline OOT book yield %, its 3-month average, and a flat/up/down MoM tag.
+2. **Summary cards** (latest full month): **OOT Collected (FTTC)** (Rm, MoM Δ), **OOT Book Yield** (%, MoM Δ in pp), **OOT Payers** (count of active payers, MoM Δ), **OOT Accounts** (active OOT book size). Each card shows its 3-month average as the sub-line.
+3. **Charts**: OOT collections (Rm, FTTC) vs 3m avg (bars + dashed avg line); OOT book yield % vs 3m avg (line); OOT payer rate % vs 3m avg (line); OOT auto vs effort split % (stacked bar).
+4. **Detail table** — grouped by opening MPM band (+ a Total OOT book group). Four metric rows per band (Collections Rm, Yield %, Payer rate %, Effort %) × last 7 months + MoM Δ / 3M Avg / YoY.
+
+> **Aggregation:** raw rows are split by `product × opening band × closing band × month`. `get_oot_band_frame()` sums the additive counts/balances/collections across product and the **closing** band so each row is a whole opening-band population, then re-derives the rate metrics; `get_oot_total_frame()` does the same across all bands for the whole-book series. Never average the pre-computed `*_pct` columns — re-derive from the summed additive columns.
+
+### Tab 3 — Roll Rates (DPD migration, whole book)
 Driven by `sql/roll_rates_by_days_past_due.sql` via `tools/roll_rates_by_dpd.py::get_roll_rates_frame`.
 1. **Summary cards** (latest full month, % of all accounts, MoM Δ):
    - **Cure rate** = returned to Current (higher = better)
@@ -66,7 +78,7 @@ Driven by `sql/roll_rates_by_days_past_due.sql` via `tools/roll_rates_by_dpd.py:
 
 > **Movement reclassification:** the query's own `movement_type` column is unreliable — its CASE compares against mis-typed literals (`'0.Current'`, `'7.91DPD'`) that don't match the actual band labels (`'0. Current'`, `'6. 91DPD'`), so it only ever emits Stable/Rolled Forward/Rolled Backward. `roll_rates_by_dpd.classify_movement()` re-derives the intended 7-way taxonomy from the start/end bands. The fix belongs in the SQL eventually.
 
-### Tab 3 — Queue Penetration (PTP coverage, fulfillment & recovery, in-term queue)
+### Tab 4 — Queue Penetration (PTP coverage, fulfillment & recovery, in-term queue)
 Driven by `sql/collections_queue_penetration.sql` via `tools/queue_penetration.py::get_primary_queue_frame`. Measures how much of the collections queue gets a Promise-to-Pay (PTP) arrangement, how many of those arrangements are kept, how much money is recovered, and the overall collections yield. Scoped to the `Internal Collections - in term` **start-of-month** queue (the headline queue); the raw query also covers other start queues (e.g. `Current`).
 
 Every PTP/recovery metric carries a **timing split** — the arrangement can be due *in the reporting month* (`_in_month`) or forward-booked into the *next month* (`_in_next_month`); the combined figure is the headline. Volumes and counts sum cleanly across timing (`in_month + next_month = total`); penetration is loan-level (a loan can have a PTP in both months, so the combined is an OR, not a sum).
@@ -109,8 +121,9 @@ Re-run `python tools/generate_dashboard.py` after editing.
 - `tools/roll_rates_by_dpd.py` — runs `sql/roll_rates_by_days_past_due.sql`; `get_roll_rates_frame()` cleans the prefixed month strings, drops join-miss nulls, and recomputes the `movement` class via `classify_movement()`. (Roll Rates tab.)
 - `tools/insights.py` — deterministic insight engine used by the **newsletter**: `candidate_facts(metrics)` selects/scores/phrases notable movements and `split()` produces the global highlights/lowlights. Pure function of `metrics.json` — figures are never invented.
 - `tools/queue_penetration.py` — runs `sql/collections_queue_penetration.sql`; `get_queue_penetration_frame()` aggregates across the end department and re-derives penetration/fulfillment/recovery rates; `get_primary_queue_frame()` returns the in-term queue's monthly series. (Queue Penetration tab.)
-- `tools/generate_dashboard.py` — orchestrator: queries all three datasets → cards / chart data / table / matrix → Jinja2 render → file output.
-- `assets/dashboard_template.html` — Jinja2 HTML template with Chart.js; three tab views (`#view-interm`, `#view-roll`, `#view-pen`).
+- `tools/out_of_term_collections.py` — runs `sql/out_of_term_collections.sql`; `get_oot_band_frame()` aggregates across product + closing band to the opening-MPM-band level; `get_oot_total_frame()` returns the whole-book monthly series. Both re-derive the FTTC-based rate metrics. (Out of Term tab.)
+- `tools/generate_dashboard.py` — orchestrator: queries all four datasets → cards / hero / chart data / table / matrix → Jinja2 render → file output.
+- `assets/dashboard_template.html` — Jinja2 HTML template with Chart.js; four tab views (`#view-interm`, `#view-oot`, `#view-roll`, `#view-pen`).
 
 ## Notes / Constraints
 - **In-term SQL schema:** `internal_collections.sql` returns a `UNION ALL` of `A_SEGMENT` (per `product × delinquency_segment × month`) and `B_TOTAL` (per `product × month`), distinguished by the `result_set` column. The dashboard consumes `A_SEGMENT` only.

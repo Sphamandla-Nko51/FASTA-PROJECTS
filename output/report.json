@@ -1,22 +1,28 @@
 {
-  "period": "Latest reporting month: May 2026",
-  "generated_at": "2026-06-29 13:49",
+  "period": "Latest reporting month: June 2026",
+  "generated_at": "2026-07-01 12:31",
   "in_term_cards": {
-    "Collection Rate": "33.5%",
-    "Effort Yield": "8.1%",
-    "Auto Collect %": "77.9%",
-    "Payer Rate": "43.8%"
+    "Collection Rate": "31.7%",
+    "Effort Yield": "7.7%",
+    "Auto Collect %": "77.3%",
+    "Payer Rate": "41.4%"
+  },
+  "oot_cards": {
+    "OOT Collected (FTTC)": "R4.19m",
+    "OOT Book Yield": "1.32%",
+    "OOT Payers": "6,865",
+    "OOT Accounts": "97,114"
   },
   "roll_cards": {
-    "Cure rate": "1.9%",
-    "Forward-roll rate": "69.1%",
-    "Default rate": "60.2%",
-    "Stable/Current": "13.1%"
+    "Cure rate": "2.1%",
+    "Forward-roll rate": "68.9%",
+    "Default rate": "61.2%",
+    "Stable/Current": "12.4%"
   },
   "penetration_cards": {
-    "Penetration rate": "35.8%",
-    "PTP fulfillment": "57.2%",
-    "Recovery yield": "32.2%",
-    "Collections yield": "19.4%"
+    "Penetration rate": "23.2%",
+    "PTP fulfillment": "61.4%",
+    "Recovery yield": "19.7%",
+    "Collections yield": "21.6%"
   }
 }

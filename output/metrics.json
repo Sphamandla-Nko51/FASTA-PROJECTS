@@ -1,121 +1,121 @@
 {
-  "period": "Latest reporting month: May 2026",
-  "generated_at": "2026-06-29 13:49",
-  "latest_month": "May 2026",
+  "period": "Latest reporting month: June 2026",
+  "generated_at": "2026-07-01 12:31",
+  "latest_month": "June 2026",
   "in_term": {
     "cards": [
       {
         "key": "collection_rate",
         "label": "Collection Rate",
         "unit": "%",
-        "value": 33.5,
+        "value": 31.7,
         "target": 27.7,
-        "delta_target": 5.8,
+        "delta_target": 4.0,
         "meets_target": true,
-        "mom": 1.8
+        "mom": -1.8
       },
       {
         "key": "effort_yield",
         "label": "Effort Yield",
         "unit": "%",
-        "value": 8.1,
+        "value": 7.7,
         "target": 10.7,
-        "delta_target": -2.6,
+        "delta_target": -3.0,
         "meets_target": false,
-        "mom": 0.1
+        "mom": -0.4
       },
       {
         "key": "auto_collect",
         "label": "Auto Collect %",
         "unit": "%",
-        "value": 77.9,
+        "value": 77.3,
         "target": 74.1,
-        "delta_target": 3.8,
+        "delta_target": 3.2,
         "meets_target": true,
-        "mom": -1.0
+        "mom": -0.7
       },
       {
         "key": "payer_rate",
         "label": "Payer Rate",
         "unit": "%",
-        "value": 43.8,
+        "value": 41.4,
         "target": 42.0,
-        "delta_target": 1.8,
-        "meets_target": true,
-        "mom": 1.4
+        "delta_target": -0.6,
+        "meets_target": false,
+        "mom": -2.4
       }
     ],
     "segments": [
       {
         "segment": "MP0",
         "yield_pct": {
-          "latest": 50.0288,
-          "mom": 2.5454,
-          "yoy": -5.1337
+          "latest": 42.0659,
+          "mom": -7.9499,
+          "yoy": 18.63
         },
         "collections_rm": {
-          "latest": 2.5919,
-          "mom": 0.1526,
-          "yoy": 0.2796
+          "latest": 2.2357,
+          "mom": -0.3562,
+          "yoy": 1.5248
         },
         "payer_rate_pct": {
-          "latest": 50.7015,
-          "mom": 2.4626,
-          "yoy": -3.7466
+          "latest": 42.475,
+          "mom": -8.2265,
+          "yoy": 18.5469
         }
       },
       {
         "segment": "MP1",
         "yield_pct": {
-          "latest": 28.8516,
-          "mom": 1.1593,
-          "yoy": -0.7717
+          "latest": 29.8466,
+          "mom": 1.014,
+          "yoy": 5.3489
         },
         "collections_rm": {
-          "latest": 2.3267,
-          "mom": 0.4383,
-          "yoy": 0.0032
+          "latest": 2.4259,
+          "mom": 0.0992,
+          "yoy": 1.0749
         },
         "payer_rate_pct": {
-          "latest": 40.8395,
-          "mom": 0.0723,
-          "yoy": 0.0867
+          "latest": 43.3078,
+          "mom": 2.4861,
+          "yoy": 7.7266
         }
       },
       {
         "segment": "MP2",
         "yield_pct": {
-          "latest": 9.6487,
-          "mom": 1.8958,
-          "yoy": 0.9989
+          "latest": 7.4286,
+          "mom": -2.2201,
+          "yoy": 2.561
         },
         "collections_rm": {
-          "latest": 0.2417,
-          "mom": 0.0029,
-          "yoy": 0.0384
+          "latest": 0.1809,
+          "mom": -0.0608,
+          "yoy": 0.0299
         },
         "payer_rate_pct": {
-          "latest": 18.4843,
-          "mom": 2.3641,
-          "yoy": 1.1023
+          "latest": 16.8565,
+          "mom": -1.6278,
+          "yoy": 4.8061
         }
       },
       {
         "segment": "MP3+",
         "yield_pct": {
-          "latest": 0.697,
-          "mom": -5.0298,
-          "yoy": -7.5063
+          "latest": 7.7918,
+          "mom": 7.0948,
+          "yoy": 2.4934
         },
         "collections_rm": {
-          "latest": 0.0025,
-          "mom": -0.0137,
-          "yoy": -0.0103
+          "latest": 0.0232,
+          "mom": 0.0207,
+          "yoy": 0.0167
         },
         "payer_rate_pct": {
-          "latest": 6.6667,
-          "mom": -6.2365,
-          "yoy": -17.4712
+          "latest": 18.75,
+          "mom": 12.0833,
+          "yoy": -8.5227
         }
       },
       {
@@ -139,19 +139,19 @@
       {
         "segment": "New Loan",
         "yield_pct": {
-          "latest": 50.2633,
-          "mom": -4.7919,
-          "yoy": 10.9673
+          "latest": 52.2719,
+          "mom": 2.0086,
+          "yoy": 42.0265
         },
         "collections_rm": {
-          "latest": 0.699,
-          "mom": 0.0606,
-          "yoy": 0.4657
+          "latest": 0.6478,
+          "mom": -0.0512,
+          "yoy": 0.6026
         },
         "payer_rate_pct": {
-          "latest": 49.5146,
-          "mom": -5.627,
-          "yoy": 10.9671
+          "latest": 47.7852,
+          "mom": -1.7294,
+          "yoy": 35.9531
         }
       }
     ]
@@ -161,29 +161,29 @@
       {
         "label": "Cure rate",
         "unit": "%",
-        "value": 1.9,
-        "mom": -0.6,
+        "value": 2.1,
+        "mom": 0.2,
         "higher_good": true
       },
       {
         "label": "Forward-roll rate",
         "unit": "%",
-        "value": 69.1,
-        "mom": 1.0,
+        "value": 68.9,
+        "mom": -0.2,
         "higher_good": false
       },
       {
         "label": "Default rate",
         "unit": "%",
-        "value": 60.2,
-        "mom": 0.7,
+        "value": 61.2,
+        "mom": 1.0,
         "higher_good": false
       },
       {
         "label": "Stable/Current",
         "unit": "%",
-        "value": 13.1,
-        "mom": -0.4,
+        "value": 12.4,
+        "mom": -0.8,
         "higher_good": true
       }
     ],

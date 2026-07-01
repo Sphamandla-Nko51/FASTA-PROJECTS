@@ -123,15 +123,27 @@ Importable module over `sql/collections_queue_penetration.sql` (PTP penetration 
 python tools/queue_penetration.py --output .tmp/queue_penetration.csv
 ```
 
+### `tools/out_of_term_collections.py`
+Importable module over `sql/out_of_term_collections.sql` (recovery on the **out-of-term** book — `opening_in_term_flag = FALSE`):
+- `get_out_of_term_data(engine)` — raw rows, one per `product × opening MPM band × closing MPM band × month`.
+- `get_oot_band_frame(engine)` — aggregates across product and the **closing** MPM band so each row is a whole **opening**-band population per month, and re-derives the FTTC-based rate metrics: `fttc_collections` (= instalment + effort), `yield_pct` (= FTTC / opening_balance), `payer_rate_pct` (= active payers / accounts), `auto_pct`/`effort_pct` (share of FTTC collections). Adds a compact `band_label` (0–3 / 4–6 / 7–12 / 13–24 / 24+ mths).
+- `get_oot_total_frame(engine)` — same derivations aggregated across all bands → the whole OOT-book monthly series (cards, hero, trend charts).
+
+Never average the pre-computed `*_pct` columns — re-derive from the summed additive columns.
+```bash
+python tools/out_of_term_collections.py --output .tmp/out_of_term_collections.csv
+```
+
 ### `tools/generate_dashboard.py`
-Main entry point for the collections dashboard. Orchestrates: query → cards → chart data → (in-term) segment table → Jinja2 render → file output, for **three tabs**. **No CLI arguments** — the SQL self-manages the reporting window.
+Main entry point for the collections dashboard. Orchestrates: query → cards → chart data → (in-term) segment table → Jinja2 render → file output, for **four tabs**. **No CLI arguments** — the SQL self-manages the reporting window.
 
 ```bash
 python tools/generate_dashboard.py
 ```
 
-Outputs `output/dashboard.html` (open in any browser), `output/report.json`, and `output/metrics.json` (numeric metrics bundle for the newsletter, via `build_metrics_bundle`). The dashboard has three tabs:
+Outputs `output/dashboard.html` (open in any browser), `output/report.json`, and `output/metrics.json` (numeric metrics bundle for the newsletter, via `build_metrics_bundle`). The dashboard has four tabs:
 - **In-Term Arrears** — 4 cards (Collection Rate, Effort Yield, Auto Collect %, Payer Rate, each with target chip + delta badge) and 4 charts scoped to the arrears population (MP1/MP2/MP3+), plus a segment-detail table covering **all** buckets/segments in the data (Current/MP0, Early Arrears, Deep Arrears, New Loan, Out of Term/MPM2 — built dynamically) with 7 months + MoM Δ + 3M Avg + YoY.
+- **Out of Term Arrears** — recovery on the out-of-term book (`opening_in_term_flag = FALSE`). A hero yield banner, 4 cards (OOT Collected FTTC, OOT Book Yield, OOT Payers, OOT Accounts — each with 3m-avg sub + MoM badge), 4 charts (collections Rm vs 3m avg, book yield % vs 3m avg, payer rate % vs 3m avg, auto vs effort split), and a detail table grouped by opening MPM band (0–3 / 4–6 / 7–12 / 13–24 / 24+) plus a Total, with Collections/Yield %/Payer rate %/Effort % rows × 7 months + MoM Δ + 3M Avg + YoY. Collections = instalment + effort (FTTC); Yield = FTTC / opening_balance.
 - **Roll Rates** (whole book, DPD migration) — 4 cards (Cure, Forward-roll, Default, Stable/Current), a 13-month pooled DPD transition matrix (row % + counts, heatmap), and 2 charts (movement composition, roll-rate trends). Movement classes are recomputed in Python because the query's `movement_type` is unreliable.
 - **Queue Penetration** (PTP coverage, fulfillment & recovery, in-term queue) — 4 cards (Penetration rate, PTP fulfillment, Recovery yield, Collections yield, each with MoM badge), 6 charts (penetration % by PTP timing, fulfillment % by timing, recovery yield this-month vs next-month stacked, collections vs recovery yield, rand funnel exposure→promised→recovered, loans vs loans-with-PTP), and a 10-row monthly-detail table (+ MoM Δ / 3M Avg / YoY). Every PTP/recovery metric carries an in-month / next-month / combined timing split. Scoped to the `Internal Collections - in term` start-of-month queue.
 

@@ -139,6 +139,24 @@
     .book-view { display: none; flex-direction: column; gap: 28px; }
     .book-view.active { display: flex; }
 
+    /* ── OOT hero banner ── */
+    .oot-hero {
+      background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow);
+      padding: 22px 28px; display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 16px; border-left: 4px solid var(--primary);
+    }
+    .oot-hero .hero-title { font-size: 1.6rem; font-weight: 700; color: var(--primary); letter-spacing: -0.02em; }
+    .oot-hero .hero-right { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; justify-content: flex-end; }
+    .oot-hero .hero-value { font-size: 2.4rem; font-weight: 700; color: var(--text); line-height: 1; }
+    .oot-hero .hero-context { font-size: 0.82rem; color: var(--muted); }
+    .oot-hero .hero-trend { font-size: 0.9rem; font-weight: 700; }
+    .oot-hero .hero-trend.pos { color: var(--pos-fg); }
+    .oot-hero .hero-trend.neg { color: var(--neg-fg); }
+    .oot-hero .hero-trend.neutral { color: var(--muted); }
+
+    /* Band-coloured left accent on the OOT detail table's segment name cell. */
+    .seg-table td.seg-accent { border-left: 4px solid var(--muted); }
+
     /* ── Footer ── */
     footer { text-align: center; font-size: 0.72rem; color: var(--muted); padding: 24px; border-top: 1px solid var(--border); line-height: 1.7; }
   </style>
@@ -165,6 +183,7 @@
 
   <div class="book-tabs">
     <button class="book-tab active" data-book="interm">In-Term Arrears</button>
+    <button class="book-tab" data-book="oot">Out of Term Arrears</button>
     <button class="book-tab" data-book="roll">Roll Rates</button>
     <button class="book-tab" data-book="pen">Queue Penetration</button>
   </div>
@@ -247,6 +266,99 @@
   </div>
 
   </div><!-- /view-interm -->
+
+  <div id="view-oot" class="book-view">
+
+  <!-- OOT hero banner -->
+  <div class="oot-hero">
+    <div class="hero-title">Out of Term: Recovery</div>
+    <div class="hero-right">
+      <span class="hero-value">{{ oot_hero.value }}</span>
+      <span class="hero-context">{{ oot_hero.context }}</span>
+      <span class="hero-trend {{ oot_hero.trend_cls }}">{{ oot_hero.trend }}</span>
+    </div>
+  </div>
+
+  <!-- OOT summary cards -->
+  <p class="section-title">Recovery on the out-of-term book &middot; latest full month</p>
+  <div class="kpi-grid">
+    {% for c in oot_cards %}
+    <div class="kpi-card">
+      <span class="kpi-label">{{ c.label }}</span>
+      <span class="kpi-value">{{ c.value }}</span>
+      <div class="kpi-foot">
+        {% if c.sub %}<span class="kpi-sub">{{ c.sub }}</span>{% endif %}
+        {% if c.delta %}<span class="badge {{ c.delta_cls }}">{{ c.delta }}</span>{% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- OOT charts -->
+  <p class="section-title">OOT trends vs 3-month average</p>
+  <div class="chart-grid">
+    <div class="chart-card">
+      <h2>OOT collections (Rm, FTTC) — vs 3m avg</h2>
+      <div class="chart-wrap"><canvas id="chartOotCollections"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h2>OOT book yield % vs 3m avg</h2>
+      <div class="chart-wrap"><canvas id="chartOotYield"></canvas></div>
+    </div>
+  </div>
+  <div class="chart-grid">
+    <div class="chart-card">
+      <h2>OOT payer rate % vs 3m avg</h2>
+      <div class="chart-wrap"><canvas id="chartOotPayer"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h2>OOT auto vs effort split %</h2>
+      <div class="chart-wrap"><canvas id="chartOotAutoEffort"></canvas></div>
+    </div>
+  </div>
+
+  <!-- OOT detail table (by opening MPM band) -->
+  <p class="section-title">OOT monthly detail — by MPM band</p>
+  <div class="table-card">
+    <table class="seg-table">
+      <thead>
+        <tr>
+          <th class="lt">Segment</th>
+          <th class="lt">Metric</th>
+          {% for m in oot_table.month_headers %}<th>{{ m }}</th>{% endfor %}
+          <th>MoM Δ</th>
+          <th>3M Avg</th>
+          <th>YoY</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for group in oot_table.groups %}
+        <tr class="group-row"><td colspan="{{ oot_table.month_headers|length + 5 }}">{{ group.header }}</td></tr>
+        {% for seg in group.segments %}
+        {% for metric in seg.metrics %}
+        <tr class="{{ 'seg-first' if loop.first else '' }}">
+          {% if loop.first %}<td class="lt seg-name seg-accent" rowspan="{{ seg.metrics|length }}" style="border-left-color: {{ seg.color }}">{{ seg.segment }}</td>{% endif %}
+          <td class="lt metric-name">{{ metric.label }}</td>
+          {% for i in range(metric.cells|length) %}
+          <td class="{{ 'latest' if loop.last else '' }}">{{ metric.cells[i] }}</td>
+          {% endfor %}
+          <td class="delta {{ metric.mom_cls }}">{{ metric.mom }}</td>
+          <td>{{ metric.avg3 }}</td>
+          <td class="delta {{ metric.yoy_cls }}">{{ metric.yoy }}</td>
+        </tr>
+        {% endfor %}
+        {% endfor %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="kpi-sub" style="margin-top:-14px">
+    Collections = instalment + effort (FTTC) &middot; Yield = FTTC / opening_balance &middot;
+    Effort % = effort_collections / total collections &middot; Payer rate = active payers / accounts &middot;
+    Population: opening_in_term_flag = FALSE (out-of-term book)
+  </p>
+
+  </div><!-- /view-oot -->
 
   <div id="view-roll" class="book-view">
 
@@ -474,6 +586,89 @@ new Chart(document.getElementById('chartArrearsMove'), {
     responsive: true, maintainAspectRatio: false,
     plugins: { legend: { position: 'top', align: 'start', labels: { boxWidth: 12, padding: 12 } } },
     scales: { x: { grid, ticks: { maxRotation: 45 } }, y: { grid, ticks: { callback: v => 'R' + v.toFixed(1) + 'm' } } },
+  },
+});
+
+// ════════════════════════════════════════════════════════════════
+// Out of Term (recovery on the OOT book)
+// ════════════════════════════════════════════════════════════════
+const OOT = {{ oot_chart_data_json }};
+
+const avg3Line = (data, label) => ({
+  type: 'line', label: label, data: data,
+  borderColor: ACCENT, backgroundColor: 'transparent',
+  borderWidth: 2, borderDash: [5, 4], pointRadius: 0, tension: 0.35,
+  fill: false, spanGaps: true, order: 0,
+});
+
+// 1 — OOT collections (Rm, FTTC): bars + 3m avg line
+new Chart(document.getElementById('chartOotCollections'), {
+  type: 'bar',
+  data: {
+    labels: OOT.months,
+    datasets: [
+      { type: 'bar', label: 'Collections', data: OOT.collections_rm,
+        backgroundColor: '#b8860b' + 'cc', borderColor: '#b8860b', borderWidth: 1, borderRadius: 2, order: 1 },
+      avg3Line(OOT.collections_avg3, '3m avg'),
+    ],
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'top', align: 'start', labels: { boxWidth: 12, padding: 12 } } },
+    scales: { x: { grid, ticks: { maxRotation: 45 } }, y: { grid, min: 0, ticks: { callback: v => 'R' + v.toFixed(1) + 'm' } } },
+  },
+});
+
+// 2 — OOT book yield % vs 3m avg
+new Chart(document.getElementById('chartOotYield'), {
+  type: 'line',
+  data: {
+    labels: OOT.months,
+    datasets: [
+      { label: 'Yield', data: OOT.yield_pct, borderColor: PRIMARY, backgroundColor: PRIMARY + '22',
+        borderWidth: 2, pointRadius: 2.5, tension: 0.35, fill: false, spanGaps: true },
+      avg3Line(OOT.yield_avg3, '3m avg'),
+    ],
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'top', align: 'start', labels: { boxWidth: 12, padding: 12 } } },
+    scales: { x: { grid, ticks: { maxRotation: 45 } }, y: { grid, ticks: { callback: pctTick } } },
+  },
+});
+
+// 3 — OOT payer rate % vs 3m avg
+new Chart(document.getElementById('chartOotPayer'), {
+  type: 'line',
+  data: {
+    labels: OOT.months,
+    datasets: [
+      { label: 'Payer rate', data: OOT.payer_rate_pct, borderColor: '#b8860b', backgroundColor: '#b8860b' + '22',
+        borderWidth: 2, pointRadius: 2.5, tension: 0.35, fill: false, spanGaps: true },
+      avg3Line(OOT.payer_avg3, '3m avg'),
+    ],
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'top', align: 'start', labels: { boxWidth: 12, padding: 12 } } },
+    scales: { x: { grid, ticks: { maxRotation: 45 } }, y: { grid, min: 0, ticks: { callback: pctTick } } },
+  },
+});
+
+// 4 — OOT auto vs effort split % (stacked bar)
+new Chart(document.getElementById('chartOotAutoEffort'), {
+  type: 'bar',
+  data: {
+    labels: OOT.months,
+    datasets: [
+      { label: 'Auto (DebiCheck)', data: OOT.auto_pct,   backgroundColor: '#2e9e6b' + 'dd', borderColor: '#2e9e6b', borderWidth: 1, borderRadius: 2 },
+      { label: 'Effort (agent)',   data: OOT.effort_pct, backgroundColor: PRIMARY + 'dd', borderColor: PRIMARY, borderWidth: 1, borderRadius: 2 },
+    ],
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'top', align: 'start', labels: { boxWidth: 12, padding: 12 } } },
+    scales: { x: { stacked: true, grid, ticks: { maxRotation: 45 } }, y: { stacked: true, grid, ticks: { callback: pctTick } } },
   },
 });
 
